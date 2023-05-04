@@ -80,7 +80,7 @@ def _get_args(
                 entrypoint_args=None
              ):
     if name is None:
-        name=_get_random_name()
+        name=_get_random_name(Algoritms(algorithm).name)
     if entrypoint_args is None:
         entrypoint_args=[]       
     return {
@@ -107,8 +107,8 @@ def _get_args(
                                                         # This Service then, will inform multiomix to MULTIOMIX_URL
     }
 
-def _get_random_name():
-    return 'multiomix-'+''.join(random.choices(string.ascii_lowercase, k=6))+'-'+''.join(random.choices(string.digits, k=6))
+def _get_random_name(algorithm):
+    return 'multiomix-'+algorithm.lower().replace('_','-')+'-'+''.join(random.choices(string.ascii_lowercase, k=6))+'-'+''.join(random.choices(string.digits, k=6))
 
 def get_algoritm_details(algoritm):
     entrypoint=None

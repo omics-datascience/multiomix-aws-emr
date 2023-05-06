@@ -3,7 +3,7 @@ import string
 import os
 import boto3
 from enum import Enum
-
+#/results-spark
 
 
 class Algoritms(Enum):
@@ -13,10 +13,9 @@ class Algoritms(Enum):
 def schedule(
                 name,
                 algorithm,
-                dataset,
                 entrypoint_arguments=None
             ):
-    args=_get_args(name,algorithm, dataset,entrypoint_arguments)
+    args=_get_args(name,algorithm, entrypoint_arguments)
     client = boto3.client('emr-containers')
     response=None
     try:
@@ -51,14 +50,32 @@ def schedule(
 
     return response
 
+def get(job_id):
+    client = boto3.client('emr-containers')
+    response=None
+    try:
+        response = client.describe_job_run(
+            id=job_id,
+            virtualClusterId=os.getenv('EMR_VIRTUAL_CLUSTER_ID')
+        )
+    except client.exceptions.ValidationException as err:
+        print("Job validation exception")
+        print(err.response['Error']['Message'])
+    except client.exceptions.ResourceNotFoundException as err:
+        print("Resource not found exception")
+        print(err.response['Error']['Message'])
+    except client.exceptions.InternalServerException as err:
+        print(err.response['Error']['Message'])
+
+    return response    
+
 def get_spark_submit_params_str(args):
     spark_submit_params="--py-files s3://{bucket}/py-files/{py_files} --conf spark.kubernetes.driver.podTemplateFile=s3://{bucket}/templates/{driver_template} --conf spark.kubernetes.executor.podTemplateFile=s3://{bucket}/templates/{executor_template} " + \
         "--conf spark.kubernetes.container.image={image} --conf spark.executor.cores={executor_cores} --conf spark.executor.memory={executor_memory} --conf spark.driver.cores={driver_cores} " + \
-        "--conf spark.driver.memory={driver_memory} --conf spark.executor.instances={executor_instances} --conf spark.kubernetes.driverEnv.DATASET_NAME={dataset} " + \
+        "--conf spark.driver.memory={driver_memory} --conf spark.executor.instances={executor_instances} " + \
         "--conf spark.kubernetes.driverEnv.DATASETS_PATH={datasets_path} --conf spark.kubernetes.driverEnv.RESULTS_PATH={results_path} --conf spark.kubernetes.driverEnv.JOB_NAME={name}"
     return spark_submit_params.format(
             bucket=args['bucket'],
-            dataset=args['dataset'].replace(".tar.gz", ""),
             py_files=args['py_files'],
             driver_template=args['driver_template'],
             executor_template=args['executor_template'],
@@ -76,13 +93,34 @@ def get_spark_submit_params_str(args):
 def _get_args(
                 name,
                 algorithm,
-                dataset,
                 entrypoint_args=None
              ):
+    
     if name is None:
         name=_get_random_name(Algoritms(algorithm).name)
+
+    # Next lines are for put together the string array that is how EMR Job 
+    # will handle entrypoint args. It will use the prefix that is in the 
+    # ENTRYPOINT_ARGS_KEY_PREFIX env var.
+    #
+    # Example:
+    #   [{"name":"arg1","value": "value1"},{"name":"arg2","value": "value2"}] 
+    #   
+    #   will be converted into
+    # 
+    #  ["--arg1","value1","--arg2","value2"]
+    #
+
     if entrypoint_args is None:
-        entrypoint_args=[]       
+        entrypoint_args=[]
+    else:
+        clean_entrypoint_args=[]
+        prefix=os.getenv('ENTRYPOINT_ARGS_KEY_PREFIX')
+        for element in entrypoint_args:
+            clean_entrypoint_args.append(prefix+element["name"])
+            clean_entrypoint_args.append(element["value"])
+        entrypoint_args=clean_entrypoint_args
+
     return {
         "name": name,
         "entrypoint": os.getenv('ALGO_'+Algoritms(algorithm).name+'_ENTRYPOINT'),
@@ -100,7 +138,6 @@ def _get_args(
         "image": os.getenv('EMR_IMAGE'),
         "virtual_cluster": os.getenv('EMR_VIRTUAL_CLUSTER_ID'),
         "release_label": os.getenv('EMR_RELEASE_LABEL'),
-        "dataset":dataset,
         "datasets_path": os.getenv('DATASETS_PATH'),
         "results_path": os.getenv('RESULTS_PATH'),
         "return_url": os.getenv('EKS_EMR_SERVICE_URL'), # EMR will inform to this url that the job ends. 
@@ -109,12 +146,6 @@ def _get_args(
 
 def _get_random_name(algorithm):
     return 'multiomix-'+algorithm.lower().replace('_','-')+'-'+''.join(random.choices(string.ascii_lowercase, k=6))+'-'+''.join(random.choices(string.digits, k=6))
-
-def get_algoritm_details(algoritm):
-    entrypoint=None
-    py_files=None
-    if algoritm == Algoritms.BBHA:
-        pass
 
 def preflight_checks(args):
     fail=False

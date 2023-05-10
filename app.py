@@ -22,3 +22,16 @@ def schedule_job():
 @app.get("/job/<job_id>")
 def get_job(job_id):
     return emr.get(job_id)
+
+@app.delete("/job/<job_id>")
+def cancel_job(job_id):
+    return emr.cancel(job_id)
+
+@app.patch("/job/<job_id>")
+def change_status_job(job_id):
+    resp=make_response({"id":job_id},204)
+    resp.headers['Location'] = url_for('get_job', job_id=job_id)
+    resp.headers['Content-Type'] = "application/json; charset=utf-8"    
+    app.logger.info("Job id: '{id}' is now in '{state}' state".format(id=job_id,state=request.json.get("state",None)))
+    # Logic to notify Upwards
+    return resp

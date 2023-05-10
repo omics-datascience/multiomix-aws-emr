@@ -69,6 +69,26 @@ def get(job_id):
 
     return response    
 
+def cancel(job_id):
+    client = boto3.client('emr-containers')
+    response=None
+    try:
+        response = client.cancel_job_run(
+            id=job_id,
+            virtualClusterId=os.getenv('EMR_VIRTUAL_CLUSTER_ID')
+        )
+    except client.exceptions.ValidationException as err:
+        print("Job validation exception")
+        print(err.response['Error']['Message'])
+    except client.exceptions.ResourceNotFoundException as err:
+        print("Resource not found exception")
+        print(err.response['Error']['Message'])
+    except client.exceptions.InternalServerException as err:
+        print(err.response['Error']['Message'])
+
+    return response
+
+
 def get_spark_submit_params_str(args):
     spark_submit_params="--py-files s3://{bucket}/py-files/{py_files} --conf spark.kubernetes.driver.podTemplateFile=s3://{bucket}/templates/{driver_template} --conf spark.kubernetes.executor.podTemplateFile=s3://{bucket}/templates/{executor_template} " + \
         "--conf spark.kubernetes.container.image={image} --conf spark.executor.cores={executor_cores} --conf spark.executor.memory={executor_memory} --conf spark.driver.cores={driver_cores} " + \
@@ -115,7 +135,7 @@ def _get_args(
         entrypoint_args=[]
     else:
         clean_entrypoint_args=[]
-        prefix=os.getenv('ENTRYPOINT_ARGS_KEY_PREFIX')
+        prefix=os.getenv('ENTRYPOINT_ARGS_KEY_PREFIX',"--")
         for element in entrypoint_args:
             clean_entrypoint_args.append(prefix+element["name"])
             clean_entrypoint_args.append(element["value"])
@@ -146,31 +166,3 @@ def _get_args(
 
 def _get_random_name(algorithm):
     return 'multiomix-'+algorithm.lower().replace('_','-')+'-'+''.join(random.choices(string.ascii_lowercase, k=6))+'-'+''.join(random.choices(string.digits, k=6))
-
-def preflight_checks(args):
-    fail=False
-    try:
-        args.name.index(' ')
-        print("- JOB_NAME cannot contain spaces.")
-        fail=True
-    except:
-        fail=False
-
-    if args.virtual_cluster is None:
-        print("- EMR_VIRTUAL_CLUSTER_ID environment variable is not set and no valid argument was given.")
-        fail=True
-
-    if args.release_label is None:
-        print("- EMR_RELEASE_LABEL environment variable is not set and no valid argument was given.")
-        fail=True
-
-    if args.execution_role is None:
-        print("- EMR_EXECUTION_ROLE_ARN environment variable is not set and no valid argument was given.")
-        fail=True
-    
-    if args.bucket is None:
-        print("- EMR_S3_BUCKET environment variable is not set and no valid argument was given.")
-        fail=True
-
-    if fail:
-        exit(1)

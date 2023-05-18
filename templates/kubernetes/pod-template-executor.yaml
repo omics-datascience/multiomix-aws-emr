@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: {your-namespace}
+spec:
+  tolerations:
+    - key: EMRKJob
+      operator: "Exists"
+      effect: "NoSchedule"
+

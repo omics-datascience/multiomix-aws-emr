@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: {your-namespace}
+spec:
+  volumes:
+    - name: source-data-volume
+      emptyDir: {}
+    - name: results-media
+      emptyDir: {}
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: {your-node-group-name}
+  tolerations:
+    - key: EMRKJob
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+  - name: spark-kubernetes-driver # This will be interpreted as driver Spark main container
+    volumeMounts:
+    - mountPath: /var/data/
+      name: source-data-volume    
+    - mountPath: /var/results/
+      name: results-media
+  - name: custom-side-car-container # Sidecar container if needed with aws cli config
+    image: {your-custom-sidecar-container-image}
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: {your-kubernetes-secret-object}
+            key: {your-iam-access-key}
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: {your-kubernetes-secret-object}
+            key: {your-iam-secret-key}
+      - name: AWS_DEFAULT_REGION
+        value: us-west-2
+      - name: EMR_S3_BUCKET
+        value: {your-bucket-name}
+    volumeMounts:
+    - mountPath: /var/log/fluentd
+      name: emr-container-communicate
+    - mountPath: /var/results/
+      name: results-media        
+    command:
+      - /bin/bash
+      - "-c"
+      - "/root/init.sh"
+  initContainers:
+  - name: spark-init-container-driver # Init container if needed with aws cli config
+    image: {your-custom-init-container-image}
+    volumeMounts:
+      - mountPath: /var/data/
+        name: source-data-volume
+    #agregar la config de aws para poder acceder a s3
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: {your-kubernetes-secret-object}
+            key: {your-iam-access-key}
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: {your-kubernetes-secret-object}
+            key: {your-iam-secret-key}
+      - name: AWS_DEFAULT_REGION
+        value: us-west-2
+      - name: EMR_S3_BUCKET
+        value: {your-bucket-name}
+    command:
+      - /bin/bash
+      - "-c"
+      - "/root/init.sh; ls -l /var/data/; ls -l /tmp/;"      

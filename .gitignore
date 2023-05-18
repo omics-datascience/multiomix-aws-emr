@@ -159,6 +159,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 local/
-exports-prod.sh
+**/exports-prod.sh
 templates/**/*-prod.yaml
 templates/**/*-prod.json

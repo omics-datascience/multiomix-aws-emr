@@ -35,5 +35,6 @@ RUN pip install --upgrade pip && pip install -r /app/config/requirements.txt
 WORKDIR /app
 
 EXPOSE 8000
+
 # Runs Gunicorn
 ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "app:app", "--timeout", "30"]

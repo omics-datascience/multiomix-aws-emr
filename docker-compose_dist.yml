@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+    # BioAPI server
+    web:
+        image: omicsdatascience/multiomix-aws-emr:0.1.0
+        restart: always
+        environment:
+            DEBUG: 'false'
+
+    # NGINX server
+    nginx:
+        image: nginx:1.19.3
+        restart: always
+        ports:
+            - "8003:8000"
+        depends_on:
+            - web
+        volumes:
+            - ./src/config/nginx/conf.d:/etc/nginx/conf.d

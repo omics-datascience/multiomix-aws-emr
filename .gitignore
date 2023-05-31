@@ -163,3 +163,6 @@ local/
 templates/**/*-prod.yaml
 templates/**/*-prod.json
 .idea/
+
+# Production file
+docker-compose.yml

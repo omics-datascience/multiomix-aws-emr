@@ -23,6 +23,26 @@ AWS EMR Spark Job abstraction for Multiomix project.
 1. Go to `src` directory and run: `python3 app.py`
 
 
+## Deploying
+
+
+### Amazon AWS
+
+Soon...
+<!-- Complete by Julian -->
+
+
+### Local
+
+You can run in local to use from your local [Multiomix deploy][multiomix-deploying]
+
+1. Make a copy of `docker-compose_dist.yml` as `docker-compose.yml`
+1. Modify any parameter you need.
+1. Run `docker-compose up -d`
+
+
 ## License
 
 This code is distributed under the MIT license.
+
+[multiomix-deploying]: https://github.com/omics-datascience/multiomix/blob/main/DEPLOYING.md

@@ -162,3 +162,4 @@ local/
 **/exports-prod.sh
 templates/**/*-prod.yaml
 templates/**/*-prod.json
+.idea/

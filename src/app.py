@@ -13,9 +13,9 @@ def hello_world():
 @app.post("/job")
 def schedule_job():
     emr_response = emr.schedule(
-        request.json.get("name", None),
-        request.json.get("algorithm", 0),
-        request.json.get("entrypoint_arguments", None)
+        request.json.get("name", None),  # TODO: make mandatory
+        request.json.get("algorithm", 0),  # TODO: make mandatory
+        request.json.get("entrypoint_arguments", None)  # TODO: make mandatory
     )
     resp = make_response({"id": emr_response["id"]}, 201)
     resp.headers['Location'] = url_for('get_job', job_id=emr_response["id"])

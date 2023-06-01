@@ -7,12 +7,22 @@ services:
         environment:
             DEBUG: 'false'
 
+            # Complete the next ENV vars with your own AWS settings
+            AWS_DEFAULT_REGION: ""
+            AWS_ACCESS_KEY_ID: ""
+            AWS_SECRET_ACCESS_KEY: ""
+            EMR_S3_BUCKET: ''
+            EMR_VIRTUAL_CLUSTER_ID: ''
+            EMR_EXECUTION_ROLE_ARN: ''
+            EMR_DRIVER_TEMPLATE: 'pod-template-driver-prod.yaml'
+            EMR_EXECUTOR_TEMPLATE: 'pod-template-executor-prod.yaml'
+
     # NGINX server
     nginx:
         image: nginx:1.19.3
         restart: always
         ports:
-            - "8003:8000"
+            - "8000:8000"
         depends_on:
             - web
         volumes:

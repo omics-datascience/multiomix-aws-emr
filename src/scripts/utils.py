@@ -23,6 +23,18 @@ KernelName = Literal['linear', 'poly', 'rbf', 'cosine']
 OptimizerName = Literal["avltree", "rbtree"]
 
 
+def clean_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Removes NaN and Inf values.
+    :param df: DataFrame to clean.
+    :return: Cleaned DataFrame.
+    """
+    assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
+    df = df.dropna(axis='columns')
+    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any('columns')
+    return df[indices_to_keep].astype(np.float64)
+
+
 def read_survival_data(molecules_dataset: str, clinical_dataset: str) -> Tuple[pd.DataFrame, np.ndarray]:
     """
     Reads and preprocess survival dataset (in CSV format with sep='\t' and decimal='.').
@@ -35,36 +47,30 @@ def read_survival_data(molecules_dataset: str, clinical_dataset: str) -> Tuple[p
     molecules_dataset = os.path.join(DATASETS_PATH, molecules_dataset)
     clinical_dataset = os.path.join(DATASETS_PATH, clinical_dataset)
 
-    # Gets molecules and clinical DataFrames
-    molecules_df = pd.read_csv(molecules_dataset, sep='\t', decimal='.', index_col=0)
-    clinical_df = pd.read_csv(clinical_dataset, sep='\t', decimal='.', index_col=0)
+    # Gets molecules and clinical DataFrames.
+    # Transpose molecules DataFrame to get samples in rows and features in columns.
+    molecules_df = pd.read_csv(molecules_dataset, sep='\t', decimal='.', index_col=0).transpose()
+
+    # Removes NaN and Inf values
+    molecules_df = clean_dataset(molecules_df)
 
     # Formats clinical data to a Numpy structured array
+    clinical_df = pd.read_csv(clinical_dataset, sep='\t', decimal='.', index_col=0)
     clinical_data = np.core.records.fromarrays(clinical_df.to_numpy().transpose(), names='event, time',
                                                formats='bool, float')
 
     return molecules_df, clinical_data
 
 
-def get_columns_from_df(combination: np.array, molecules_df: pd.DataFrame) -> pd.DataFrame:
+def get_columns_from_df(columns_list: np.array, df: pd.DataFrame) -> pd.DataFrame:
     """
-    Gets a specific subset of features from a Pandas DataFrame.
-    @param molecules_df: Pandas DataFrame with all the features.
-    @param combination: Combination of features to extract.
-    @return: A Pandas DataFrame with only the combinations of features.
+    Returns a set of columns of a DataFrame. The usefulness of this method is that it works for categorical indexes or
+    strings
     """
-    # Get subset of features
-    if isinstance(combination, np.ndarray):
-        # In this case it's a Numpy array with int indexes (used in metaheuristics)
-        subset: pd.DataFrame = molecules_df.iloc[combination]
-    else:
-        # In this case it's a list of columns names (used in Blind Search)
-        molecules_to_extract = np.intersect1d(molecules_df.index, combination)
-        subset: pd.DataFrame = molecules_df.loc[molecules_to_extract]
+    if np.issubdtype(columns_list.dtype, np.number):
+        # Gets by int indexes
+        non_zero_idx = np.nonzero(columns_list)
+        return df.iloc[:, non_zero_idx[0]]
 
-    # Discards NaN values
-    subset = subset[~pd.isnull(subset)]
-
-    # Makes the rows columns
-    subset = subset.transpose()
-    return subset
+    # Gets by column names
+    return df[columns_list]

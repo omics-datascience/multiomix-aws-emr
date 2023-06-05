@@ -33,6 +33,17 @@ CrossValidationCallback = Callable[[Union[pd.DataFrame, Broadcast], np.ndarray, 
 CrossValidationCallbackSequential = Callable[[pd.DataFrame, np.ndarray], float]
 
 
+def create_folder_with_permissions(dir_path: str):
+    """Creates (if not exist) a folder and assigns permissions to work without problems in the Spark container."""
+    # First, checks if the folder exists
+    if os.path.exists(dir_path):
+        return
+
+    mode = 0o777
+    os.mkdir(dir_path, mode)
+    os.chmod(dir_path, mode)  # Mode in mkdir is sometimes ignored: https://stackoverflow.com/a/5231994/7058363
+
+
 def fitness_function_with_checking(
         compute_cross_validation: CrossValidationCallback,
         index_array: np.ndarray,
@@ -123,6 +134,8 @@ def run_bbha_experiment(
 
     # Configures CSV file
     results_path = os.getenv('RESULTS_PATH')  # Gets shared folder path
+    create_folder_with_permissions(results_path)
+
     app_folder = os.path.join(results_path, app_name)
     res_csv_file_path = os.path.join(current_script_dir_name, f'{app_folder}/result_{now}.csv')
 
@@ -130,10 +143,8 @@ def run_bbha_experiment(
     logging.info(f'Metrics will be saved in JSON files (one per iteration) inside folder "{app_folder}"')
 
     # Creates a folder to save all the results and figures
-    mode = 0o777
     dir_path = os.path.join(current_script_dir_name, app_folder)
-    os.mkdir(dir_path, mode)
-    os.chmod(dir_path, mode)  # Mode in mkdir is sometimes ignored: https://stackoverflow.com/a/5231994/7058363
+    create_folder_with_permissions(dir_path)
 
     best_metric_with_all_features = f'{metric_description} with all the features'
     best_metric_in_runs_key = f'Best {metric_description} (in {number_of_independent_runs} runs)'

@@ -22,8 +22,6 @@ class Parameters:
     svm_max_iterations: int
 
     # Number of cores used by the worker to compute the Cross Validation. -1 = use all
-    # TODO: this is being used in the CV process and in the Model! Change that and separate in two parameters
-    # n_jobs (for CV) and tree_n_jobs (for RF Model)
     n_jobs: int
 
     # Number of folds in the CrossValidation
@@ -44,8 +42,11 @@ class Parameters:
     # Number of independent complete runs to get the best parameters
     number_of_independent_runs: int
 
-    # Filename of the dataset of molecule expressions to use
-    dataset: str
+    # Filename of the dataset with molecule expressions to use
+    molecules_dataset: str
+
+    # Filename of the dataset with clinical data to use
+    clinical_dataset: str
 
     # Number of iterations for the BBHA algorithm
     bbha_n_iterations: int
@@ -55,6 +56,9 @@ class Parameters:
 
     # Number of trees in Random Forest
     rf_n_estimators: int
+
+    # Number of cores used by the RandomForest training. -1 = use all
+    tree_n_jobs: int
 
     # Clustering algorithm to use
     clustering_algorithm: Literal["kmeans", "spectral"]
@@ -72,8 +76,12 @@ class Parameters:
         # General parameters
         parser.add_argument("--master", dest='master', help="URL to connect to the master", type=str,
                             default="spark://master-node:7077")
-        parser.add_argument("--dataset", dest='dataset', help="Filename of the dataset of molecule expressions to use",
-                            type=str)
+        parser.add_argument("--molecules-dataset", dest='molecules_dataset',
+                            help="Filename of the dataset with molecule expressions to use. This file must be in the "
+                                 "shared folder", type=str)
+        parser.add_argument("--clinical-dataset", dest='clinical_dataset',
+                            help="Filename of the dataset with clinical data to use. This file must be in the "
+                                 "shared folder", type=str)
         parser.add_argument("--model", dest='model', choices=['svm', 'rf', 'clustering'],
                             help="Classifier to use in the metaheuristic", type=str, default="svm")
         parser.add_argument('--independent-runs', dest='number_of_independent_runs',
@@ -106,6 +114,9 @@ class Parameters:
         # RF parameters
         parser.add_argument("--rf-n-estimators", dest='rf_n_estimators', help="Number of trees in Random Forest",
                             type=int, default=10)
+        parser.add_argument("--tree-n-jobs", dest='tree_n_jobs',
+                            help="Number of cores used by the RandomForest training. -1 = use all",
+                            type=int, default=-1)
 
         # Clustering parameters
         parser.add_argument("--clustering-algorithm", dest='clustering_algorithm', choices=['k_means', 'spectral'],
@@ -127,7 +138,8 @@ class Parameters:
         # BBHA parameters
         parser.add_argument("--bbha-iterations", dest='bbha_n_iterations',
                             help="Number of iterations for the BBHA algorithm", type=int)
-        parser.add_argument("--n-stars", dest='n_stars', help="Number of stars in the BBHA", type=int, default=3)  # TODO: change default to 30
+        # TODO: change default to 30
+        parser.add_argument("--n-stars", dest='n_stars', help="Number of stars in the BBHA", type=int, default=3)
 
         args = parser.parse_args()
 
@@ -141,7 +153,8 @@ class Parameters:
         self.random_state = args.random_state
         self.use_load_balancer = False   # TODO: leave this args.use_load_balancer when implemented
         self.number_of_independent_runs = args.number_of_independent_runs
-        self.dataset = args.dataset
+        self.molecules_dataset = args.molecules_dataset
+        self.clinical_dataset = args.clinical_dataset
         self.bbha_n_iterations = args.bbha_n_iterations
         self.model = args.model
         self.rf_n_estimators = args.rf_n_estimators
@@ -151,3 +164,4 @@ class Parameters:
         self.number_of_clusters = args.number_of_clusters
         self.use_broadcast = args.use_broadcast
         self.debug = args.debug
+        self.tree_n_jobs = args.tree_n_jobs

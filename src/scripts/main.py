@@ -30,7 +30,7 @@ if params.model == 'rf':
                                       min_samples_split=10,
                                       min_samples_leaf=15,
                                       max_features="sqrt",
-                                      n_jobs=params.n_jobs,
+                                      n_jobs=params.tree_n_jobs,
                                       random_state=params.random_state)
 elif params.model == 'svm':
     rank_ratio = 0.0 if params.svm_is_regression else 1.0
@@ -255,7 +255,6 @@ def main():
     fitness_function = compute_cross_validation_spark
 
     run_improved_bbha = False  # TODO: improved BBHA it's not implemented for Spark right now
-    add_epsilon = params.model == 'svm'
 
     # Runs normal Feature Selection experiment using BBHA
     run_bbha_experiment(
@@ -270,9 +269,9 @@ def main():
         compute_cross_validation=fitness_function,
         sc=sc,
         metric_description='concordance index' if params.model != 'clustering' else 'log_likelihood' ,  # TODO: check this, log_likelihood is not always used
-        add_epsilon=add_epsilon,  # Epsilon is needed only by the SVM
         debug=params.debug,
-        dataset=params.dataset,
+        molecules_dataset=params.molecules_dataset,
+        clinical_dataset=params.clinical_dataset,
         number_of_independent_runs=params.number_of_independent_runs,
         n_iterations=params.bbha_n_iterations,
         number_of_workers=number_of_workers,

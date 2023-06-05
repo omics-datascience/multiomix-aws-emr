@@ -63,8 +63,8 @@ def run_bbha_experiment(
         metric_description: str,
         model_name: ModelName,
         parameters_description: str,
-        add_epsilon: bool,
-        dataset: DatasetName,
+        molecules_dataset: str,
+        clinical_dataset: str,
         number_of_independent_runs: int,
         n_iterations: int,
         number_of_workers: int,
@@ -90,15 +90,14 @@ def run_bbha_experiment(
     :param metric_description: Description of the metric returned by the CrossValidation function to display in the CSV.
     :param model_name: Description of the model used as CrossValidation fitness function to be displayed in the CSV.
     :param parameters_description: Model's parameters description to report in results.
-    :param add_epsilon: If True it adds an epsilon to 0s in Y data to prevent errors in SVM training.
-    :param dataset: Dataset name to use (name of the sub folder in the 'Datasets' folder).
+    :param molecules_dataset: Molecules dataset file path.
+    :param clinical_dataset: Clinical dataset file path.
     :param number_of_workers: Number of workers nodes in the Spark cluster.
     :param use_load_balancer: If True, assigns a partition ID using a load balancer. If False, distributes sequentially.
     :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise (LogRank p-value).
     :param svm_kernel: SVM 'kernel' parameter to fill SVMParameter instance. Only used if model used is the SVM.
     :param svm_optimizer: SVM 'optimizer' parameter to fill SVMParameter instance. Only used if model used is the SVM.
     :param run_improved_bbha: If None runs both algorithm versions. True for improved, False to run the original.
-    :param run_in_spark: True to run the stars of the BBHA in a distributed Apache Spark cluster.
     :param debug: True to log extra data during script execution.
     :param sc: Spark Context. Only used if 'run_in_spark' = True.
     :param number_of_independent_runs: Number of independent runs. On every independent run it stores a JSON file with.
@@ -143,7 +142,7 @@ def run_bbha_experiment(
                                     f'CPU execution time ({number_of_independent_runs} runs) in seconds'])
 
     # Gets survival data
-    x, y = read_survival_data(add_epsilon, dataset_folder=dataset)
+    x, y = read_survival_data(molecules_dataset, clinical_dataset)
 
     number_samples, number_features = x.shape
 
@@ -156,7 +155,7 @@ def run_bbha_experiment(
 
     logging.info(f'Metric: {metric_description} | Model: {model_name} | '
                  f'Parameters: {parameters_description} | Random state: {random_state}')
-    logging.info(f'Survival dataset: "{dataset}"')
+    logging.info(f'Survival dataset: "{molecules_dataset}"')
     logging.info(f'\tSamples (rows): {number_samples} | Features (columns): {number_features}')
     logging.info(f'\tY shape: {y.shape[0]}')
 
@@ -261,7 +260,7 @@ def run_bbha_experiment(
             # Adds data to JSON
             json_extra_data = {
                 'model': model_name,
-                'dataset': dataset,
+                'dataset': molecules_dataset,
                 'parameters': parameters_description,
                 'number_of_samples': number_samples,
                 'independent_iteration_time': iteration_time
@@ -269,7 +268,7 @@ def run_bbha_experiment(
             json_experiment_data = {**json_experiment_data, **json_extra_data}
 
             now = time.strftime('%Y-%m-%d_%H_%M_%S')
-            json_file = f'{model_name}_{parameters_description}_{metric_description}_{dataset}_{now}_' \
+            json_file = f'{model_name}_{parameters_description}_{metric_description}_{molecules_dataset}_{now}_' \
                         f'iteration_{independent_run_i}_results.json'
             json_file = re.sub(' +', '_', json_file).lower()  # Replaces whitespaces with '_' and makes lowercase
             json_dest = os.path.join(app_folder, json_file)
@@ -282,7 +281,7 @@ def run_bbha_experiment(
         logging.info(f'{number_of_independent_runs} independent runs finished in {independent_run_time} seconds')
 
         experiment_results_dict = {
-            'dataset': dataset,
+            'dataset': molecules_dataset,
             'Improved BBHA': 1 if run_improved else 0,
             'Model': model_name,
             best_metric_with_all_features: round(all_features_concordance_index, 4),

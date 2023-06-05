@@ -10,7 +10,7 @@ from pyspark import SparkContext
 import time
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler, PolynomialFeatures
-from parameters import SVMParameters
+from model_parameters import SVMParameters
 
 logging.getLogger().setLevel(logging.INFO)
 
@@ -544,7 +544,6 @@ def binary_black_hole_spark(
         num_of_iterations.append(round(mean_num_of_iterations, 4))
         train_scores.append(round(train_score, 4))
         predicted_time_exec.append(round(current_predicted_time, 4))
-
 
     # The star with the best fitness is the black hole
     black_hole_idx, black_hole_subset, black_hole_data = get_best_spark(stars_subsets, initial_stars_results_values,

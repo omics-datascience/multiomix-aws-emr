@@ -25,7 +25,7 @@ OptimizerName = Literal["avltree", "rbtree"]
 
 def read_survival_data(molecules_dataset: str, clinical_dataset: str) -> Tuple[pd.DataFrame, np.ndarray]:
     """
-    Reads and preprocess survival dataset (in CSV format).
+    Reads and preprocess survival dataset (in CSV format with sep='\t' and decimal='.').
     NOTE: This method considers that both datasets where correctly preprocessed.
     :param molecules_dataset: Molecules CSV dataset file path.
     :param clinical_dataset: Clinical CSV dataset file path.
@@ -46,15 +46,25 @@ def read_survival_data(molecules_dataset: str, clinical_dataset: str) -> Tuple[p
     return molecules_df, clinical_data
 
 
-def get_columns_from_df(columns_list: np.array, df: pd.DataFrame) -> pd.DataFrame:
+def get_columns_from_df(combination: np.array, molecules_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Returns a set of columns of a DataFrame. The usefulness of this method is that it works for categorical indexes or
-    strings
+    Gets a specific subset of features from a Pandas DataFrame.
+    @param molecules_df: Pandas DataFrame with all the features.
+    @param combination: Combination of features to extract.
+    @return: A Pandas DataFrame with only the combinations of features.
     """
-    if np.issubdtype(columns_list.dtype, np.number):
-        # Gets by int indexes
-        non_zero_idx = np.nonzero(columns_list)
-        return df.iloc[:, non_zero_idx[0]]
+    # Get subset of features
+    if isinstance(combination, np.ndarray):
+        # In this case it's a Numpy array with int indexes (used in metaheuristics)
+        subset: pd.DataFrame = molecules_df.iloc[combination]
+    else:
+        # In this case it's a list of columns names (used in Blind Search)
+        molecules_to_extract = np.intersect1d(molecules_df.index, combination)
+        subset: pd.DataFrame = molecules_df.loc[molecules_to_extract]
 
-    # Gets by column names
-    return df[columns_list]
+    # Discards NaN values
+    subset = subset[~pd.isnull(subset)]
+
+    # Makes the rows columns
+    subset = subset.transpose()
+    return subset

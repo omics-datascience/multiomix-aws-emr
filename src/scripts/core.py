@@ -1,15 +1,14 @@
 import json
 import re
 from typing import Optional, Callable, Union, Tuple, Any
-from metaheuristics import binary_black_hole, improved_binary_black_hole, binary_black_hole_spark, \
-    CrossValidationSparkResult
+from metaheuristics import improved_binary_black_hole, binary_black_hole_spark, CrossValidationSparkResult
 import os
 import pandas as pd
 from pyspark import SparkContext, Broadcast
 from pyspark.sql import DataFrame as SparkDataFrame
 import numpy as np
-from parameters import SVMParameters
-from utils import get_columns_from_df, read_survival_data, DatasetName, KernelName, ModelName, OptimizerName
+from model_parameters import SVMParameters
+from utils import get_columns_from_df, read_survival_data, KernelName, ModelName, OptimizerName
 import time
 import logging
 
@@ -111,6 +110,8 @@ def run_bbha_experiment(
     :param binary_threshold: Threshold used in BBHA, None to be computed randomly.
     :param use_broadcasts_in_spark: If True, it generates a Broadcast value to pass to the fitness function instead of pd.DataFrame. Is ignored if run_in_spark = False.
     """
+    number_of_workers = 1  # TODO: remove
+
     if number_of_workers == 0:
         logging.error(f'Invalid number of workers in Spark Cluster ({number_of_workers}). '
                       'Check "number_of_workers" parameter or set "run_in_spark" = False!')
@@ -121,7 +122,8 @@ def run_bbha_experiment(
     current_script_dir_name = os.path.dirname(__file__)
 
     # Configures CSV file
-    app_folder = f'Results/{app_name}'
+    results_path = os.getenv('RESULTS_PATH')  # Gets shared folder path
+    app_folder = os.path.join(results_path, app_name)
     res_csv_file_path = os.path.join(current_script_dir_name, f'{app_folder}/result_{now}.csv')
 
     logging.info(f'Metaheuristic results will be saved in "{res_csv_file_path}"')
@@ -148,7 +150,7 @@ def run_bbha_experiment(
 
     logging.info(f'Running {number_of_independent_runs} independent runs of the BBHA experiment with {n_iterations} '
                  f'iterations and {n_stars} stars')
-    logging.info(f'Running {n_stars} in Spark ({n_stars // number_of_workers} stars per worker). '
+    logging.info(f'Running {n_stars} stars in Spark ({n_stars // number_of_workers} stars per worker). '
                  f'{number_of_workers} active workers in Spark Cluster')
     load_balancer_desc = 'With' if use_load_balancer else 'Without'
     logging.info(f'{load_balancer_desc} load balancer')

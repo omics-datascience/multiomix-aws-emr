@@ -1,6 +1,5 @@
-from argparse import ArgumentParser, BooleanOptionalAction
+from argparse import ArgumentParser
 from typing import Literal, Optional
-
 from utils import ModelName
 
 
@@ -89,18 +88,18 @@ class Parameters:
                             default=1)  # TODO: change default to 3
         parser.add_argument('--use-load-balancer', dest='use_load_balancer',
                             help="If True, load balancer is used to generate Spark partitions", default=True,
-                            action=BooleanOptionalAction)
+                            action='store_true')
         parser.add_argument('--svm-is-regression', dest='svm_is_regression',
                             help="If True, load balancer is used to generate Spark partitions", default=True,
-                            action=BooleanOptionalAction)
+                            action='store_true')
         parser.add_argument("--random-state", dest='random_state', help="Random seed to replicate randomness", type=int,
                             default=None)
         parser.add_argument('--use-broadcast', dest='use_broadcast',
                             help="If True, it broadcast the data to all the workers node", default=True,
-                            action=BooleanOptionalAction)
+                            action='store_true')
         parser.add_argument('--debug', dest='debug',
                             help="If True it logs all the star values in the terminal", default=False,
-                            action=BooleanOptionalAction)
+                            action='store_true')
 
         # SVM parameters
         parser.add_argument("--svm-kernel", dest='svm_kernel',
@@ -133,11 +132,12 @@ class Parameters:
                             default=3)  # TODO: change default to 10
         parser.add_argument('--return-train-scores', dest='return_train_scores',
                             help="To get the training score or not during CV", default=True,
-                            action=BooleanOptionalAction)
+                            action='store_true')
 
         # BBHA parameters
+        # TODO: change default to 30
         parser.add_argument("--bbha-iterations", dest='bbha_n_iterations',
-                            help="Number of iterations for the BBHA algorithm", type=int)
+                            help="Number of iterations for the BBHA algorithm", type=int, default=1)
         # TODO: change default to 30
         parser.add_argument("--n-stars", dest='n_stars', help="Number of stars in the BBHA", type=int, default=3)
 
@@ -164,4 +164,5 @@ class Parameters:
         self.number_of_clusters = args.number_of_clusters
         self.use_broadcast = args.use_broadcast
         self.debug = args.debug
+        self.n_jobs = args.n_jobs
         self.tree_n_jobs = args.tree_n_jobs

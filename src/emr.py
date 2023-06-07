@@ -4,10 +4,6 @@ import os
 import boto3
 from enum import Enum
 
-
-# /results-spark
-
-
 class Algorithms(Enum):
     BLIND_SEARCH = 0
     BBHA = 1

@@ -1,6 +1,6 @@
 import os
 import emr
-from flask import Flask, url_for, request, make_response
+from flask import Flask, url_for, request, make_response,abort
 
 app = Flask(__name__)
 
@@ -12,10 +12,18 @@ def hello_world():
 
 @app.post("/job")
 def schedule_job():
+    request_data=request.get_json()
+    if request_data is None or \
+            "name" not in request_data or \
+            "algorithm" not in request_data or \
+            "entrypoint_arguments" not in request_data:
+        abort(400)
+            
+
     emr_response = emr.schedule(
-        request.json.get("name", None),  # TODO: make mandatory
-        request.json.get("algorithm", 0),  # TODO: make mandatory
-        request.json.get("entrypoint_arguments", None)  # TODO: make mandatory
+        request_data["name"],
+        request_data["algorithm"],
+        request_data["entrypoint_arguments"]
     )
     resp = make_response({"id": emr_response["id"]}, 201)
     resp.headers['Location'] = url_for('get_job', job_id=emr_response["id"])
@@ -26,12 +34,31 @@ def schedule_job():
 
 @app.get("/job/<job_id>")
 def get_job(job_id):
-    return emr.get(job_id)
+    emr_response=emr.get(job_id)
+    if emr_response is None:
+        abort(404)
+
+    resp = make_response(
+                        {
+                            "id": emr_response["jobRun"]["id"],
+                            "createdAt": emr_response["jobRun"]["createdAt"],
+                            "finishedAt": emr_response["jobRun"]["finishedAt"],
+                            "name":emr_response["jobRun"]["name"],
+                            "state": emr_response["jobRun"]["state"],
+                            "stateDetails": emr_response["jobRun"]["stateDetails"],                         
+                        }, 200)
+    resp.headers['Content-Type'] = "application/json; charset=utf-8"    
+    return resp
 
 
 @app.delete("/job/<job_id>")
 def cancel_job(job_id):
-    return emr.cancel(job_id)
+    emr_response=emr.cancel(job_id)
+    resp = make_response({"id": emr_response["id"]}, 200)
+    resp.headers['Location'] = url_for('get_job', job_id=emr_response["id"])
+    resp.headers['Content-Type'] = "application/json; charset=utf-8"
+
+    return resp
 
 
 @app.patch("/job/<job_id>")

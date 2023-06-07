@@ -54,6 +54,9 @@ def get_job(job_id):
 @app.delete("/job/<job_id>")
 def cancel_job(job_id):
     emr_response=emr.cancel(job_id)
+    if emr_response is None:
+        abort(409)
+
     resp = make_response({"id": emr_response["id"]}, 200)
     resp.headers['Location'] = url_for('get_job', job_id=emr_response["id"])
     resp.headers['Content-Type'] = "application/json; charset=utf-8"

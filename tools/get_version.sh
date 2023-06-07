@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "VERSION=0.1.0"
+echo "VERSION=0.1.1"

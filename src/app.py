@@ -45,7 +45,9 @@ def change_status_job(job_id):
     resp.headers['Location'] = url_for('get_job', job_id=job_id)
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
     app.logger.info("Job id: '{id}' is now in '{state}' state".format(id=job_id, state=request.json.get("state", None)))
-    # Logic to notify Upwards
+    # TODO: implement logic to notify Upwards to the MultiomixURL/feature-selection/aws-notification/<job_id>/ endpoint
+    # TODO: check parameters to send with Camele
+
     return resp
 
 

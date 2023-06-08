@@ -6,8 +6,9 @@ app = Flask(__name__)
 
 
 @app.get("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
+def index():
+    # TODO: add version here
+    return f"<h1>Multiomix AWS EMR integration</h1>"
 
 
 @app.post("/job")

@@ -17,6 +17,11 @@ def schedule_job():
         request.json.get("algorithm", 0),  # TODO: make mandatory
         request.json.get("entrypoint_arguments", None)  # TODO: make mandatory
     )
+
+    # If the response is None, returns a 500 error
+    if emr_response is None:
+        return make_response({"error": "Internal server error"}, 500)
+
     resp = make_response({"id": emr_response["id"]}, 201)
     resp.headers['Location'] = url_for('get_job', job_id=emr_response["id"])
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
@@ -45,6 +50,7 @@ def change_status_job(job_id):
 
 
 if __name__ == "__main__":
+    # TODO: document both PORT and IS_DEBUG env vars
     port_str = os.environ.get('PORT', '8003')
     is_debug = os.environ.get('IS_DEBUG', 'true') == 'true'
     port = int(port_str)

@@ -1,11 +1,10 @@
+import logging
 import random
 import string
 import os
 import boto3
+from typing import Any, Dict, Optional
 from enum import Enum
-
-
-# /results-spark
 
 
 class Algorithms(Enum):
@@ -13,17 +12,25 @@ class Algorithms(Enum):
     BBHA = 1
 
 
-def schedule(
-        name,
-        algorithm,
-        entrypoint_arguments=None
-):
+def schedule(name: str, algorithm: Algorithms,
+             entrypoint_arguments: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """
+    TODO: document
+    :param name:
+    :param algorithm:
+    :param entrypoint_arguments:
+    :return:
+    """
     args = _get_args(name, algorithm, entrypoint_arguments)
     client = boto3.client('emr-containers')
     response = None
+
+    # Replaces all the non-alphanumeric chars from the job name to respect the [\.\-_/#A-Za-z0-9]+ regex
+    job_name = ''.join(e for e in args['name'] if e.isalnum() or e in ['.', '-', '_', '/', '#'])
+
     try:
         response = client.start_job_run(
-            name=args['name'],
+            name=job_name,
             virtualClusterId=args['virtual_cluster'],
             executionRoleArn=args['execution_role'],
             releaseLabel=args['release_label'],
@@ -44,13 +51,13 @@ def schedule(
             }
         )
     except client.exceptions.ValidationException as err:
-        print("Job validation exception")
-        print(err.response['Error']['Message'])
+        logging.error("Job validation exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.ResourceNotFoundException as err:
-        print("Resource not found exception")
-        print(err.response['Error']['Message'])
+        logging.error("Resource not found exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.InternalServerException as err:
-        print(err.response['Error']['Message'])
+        logging.error(err.response['Error']['Message'])
 
     return response
 
@@ -64,13 +71,13 @@ def get(job_id):
             virtualClusterId=os.getenv('EMR_VIRTUAL_CLUSTER_ID')
         )
     except client.exceptions.ValidationException as err:
-        print("Job validation exception")
-        print(err.response['Error']['Message'])
+        logging.error("Job validation exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.ResourceNotFoundException as err:
-        print("Resource not found exception")
-        print(err.response['Error']['Message'])
+        logging.error("Resource not found exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.InternalServerException as err:
-        print(err.response['Error']['Message'])
+        logging.error(err.response['Error']['Message'])
 
     return response
 
@@ -84,13 +91,13 @@ def cancel(job_id):
             virtualClusterId=os.getenv('EMR_VIRTUAL_CLUSTER_ID')
         )
     except client.exceptions.ValidationException as err:
-        print("Job validation exception")
-        print(err.response['Error']['Message'])
+        logging.error("Job validation exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.ResourceNotFoundException as err:
-        print("Resource not found exception")
-        print(err.response['Error']['Message'])
+        logging.error("Resource not found exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.InternalServerException as err:
-        print(err.response['Error']['Message'])
+        logging.error(err.response['Error']['Message'])
 
     return response
 

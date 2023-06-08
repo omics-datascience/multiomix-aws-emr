@@ -168,4 +168,4 @@ templates/**/*-prod.json
 docker-compose.yml
 
 # Spark scripts zip
-src/scripts/scripts.zip
+scripts/scripts.zip

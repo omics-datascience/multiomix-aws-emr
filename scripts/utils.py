@@ -38,7 +38,8 @@ def clean_dataset(df: pd.DataFrame) -> pd.DataFrame:
 def read_survival_data(molecules_dataset: str, clinical_dataset: str) -> Tuple[pd.DataFrame, np.ndarray]:
     """
     Reads and preprocess survival dataset (in CSV format with sep='\t' and decimal='.').
-    NOTE: This method considers that both datasets where correctly preprocessed.
+    NOTE: This method considers that both datasets where correctly preprocessed (i.e. molecules DataFrame has
+    only numeric values, and clinical only has time and event columns. Both indexes are the patients).
     :param molecules_dataset: Molecules CSV dataset file path.
     :param clinical_dataset: Clinical CSV dataset file path.
     :return: Tuple with the filtered DataFrame, Y data.

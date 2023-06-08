@@ -28,8 +28,12 @@ ENV ENTRYPOINT_ARGS_KEY_PREFIX "--"
 ENV WEB_CONCURRENCY 1
 
 # Installs Python requirements and app files
+ADD config/requirements.txt /requirements.txt
+RUN pip install --upgrade pip && pip install -r /requirements.txt
+RUN rm -f /requirements.txt
+
+# Adds app files
 ADD src/ /app/
-RUN pip install --upgrade pip && pip install -r /app/config/requirements.txt 
 
 # Needed to make docker-compose `command` work
 WORKDIR /app

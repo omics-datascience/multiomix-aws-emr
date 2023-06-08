@@ -1,6 +1,6 @@
 import os
 import emr
-from flask import Flask, url_for, request, make_response,abort
+from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
 VERSION = '0.1.1'
@@ -15,13 +15,12 @@ def index():
 
 @app.post("/job")
 def schedule_job():
-    request_data=request.get_json()
+    request_data = request.get_json()
     if request_data is None or \
             "name" not in request_data or \
             "algorithm" not in request_data or \
             "entrypoint_arguments" not in request_data:
         abort(400)
-            
 
     emr_response = emr.schedule(
         request_data["name"],
@@ -42,26 +41,25 @@ def schedule_job():
 
 @app.get("/job/<job_id>")
 def get_job(job_id):
-    emr_response=emr.get(job_id)
+    emr_response = emr.get(job_id)
     if emr_response is None:
         abort(404)
 
-    resp = make_response(
-                        {
-                            "id": emr_response["jobRun"]["id"],
-                            "createdAt": emr_response["jobRun"]["createdAt"],
-                            "finishedAt": emr_response["jobRun"]["finishedAt"],
-                            "name":emr_response["jobRun"]["name"],
-                            "state": emr_response["jobRun"]["state"],
-                            "stateDetails": emr_response["jobRun"]["stateDetails"],                         
-                        }, 200)
-    resp.headers['Content-Type'] = "application/json; charset=utf-8"    
+    resp = make_response({
+        "id": emr_response["jobRun"]["id"],
+        "createdAt": emr_response["jobRun"]["createdAt"],
+        "finishedAt": emr_response["jobRun"]["finishedAt"],
+        "name": emr_response["jobRun"]["name"],
+        "state": emr_response["jobRun"]["state"],
+        "stateDetails": emr_response["jobRun"]["stateDetails"],
+    }, 200)
+    resp.headers['Content-Type'] = "application/json; charset=utf-8"
     return resp
 
 
 @app.delete("/job/<job_id>")
 def cancel_job(job_id):
-    emr_response=emr.cancel(job_id)
+    emr_response = emr.cancel(job_id)
     if emr_response is None:
         abort(409)
 

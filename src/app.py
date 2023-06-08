@@ -2,13 +2,15 @@ import os
 import emr
 from flask import Flask, url_for, request, make_response
 
+# BioAPI version
+VERSION = '0.1.1'
+
 app = Flask(__name__)
 
 
 @app.get("/")
 def index():
-    # TODO: add version here
-    return f"<h1>Multiomix AWS EMR integration</h1>"
+    return f"<h1>Multiomix AWS EMR integration v{VERSION}</h1>"
 
 
 @app.post("/job")
@@ -31,23 +33,23 @@ def schedule_job():
 
 
 @app.get("/job/<job_id>")
-def get_job(job_id):
+def get_job(job_id: str):
     return emr.get(job_id)
 
 
 @app.delete("/job/<job_id>")
-def cancel_job(job_id):
+def cancel_job(job_id: str):
     return emr.cancel(job_id)
 
 
 @app.patch("/job/<job_id>")
-def change_status_job(job_id):
+def change_status_job(job_id: str):
     resp = make_response({"id": job_id}, 204)
     resp.headers['Location'] = url_for('get_job', job_id=job_id)
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
     app.logger.info("Job id: '{id}' is now in '{state}' state".format(id=job_id, state=request.json.get("state", None)))
     # TODO: implement logic to notify Upwards to the MultiomixURL/feature-selection/aws-notification/<job_id>/ endpoint
-    # TODO: check parameters to send with Camele
+    # TODO: send the same fields as get_job() returns
 
     return resp
 

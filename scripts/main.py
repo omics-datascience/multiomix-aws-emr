@@ -63,7 +63,7 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
 
         # Locks to prevent multiple partitions in one worker getting all cores and degrading the performance
         logging.info(f'Waiting lock to compute CV with {n_features} features')
-        with FileLock(f"/home/big_data/svm-surv.lock"):
+        with FileLock(f"svm-surv.lock"):
             logging.info('File lock acquired, computing CV...')
 
             if params.model == 'clustering':

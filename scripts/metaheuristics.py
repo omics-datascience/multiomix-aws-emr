@@ -169,7 +169,7 @@ def get_best_spark(
     :return: Best idx of the stars (Black Hole idx), subset of features for the Black Hole, and all the data returned
     by the star that computes the best fitness (from now, Black Hole)
     """
-    # Converts to a Numpy's array to discard the star's index
+    # Converts to a Numpy array to discard the star's index
     workers_results_np = np.array(workers_results)
     workers_results_np_aux = np.array([np.array(a_list) for a_list in workers_results_np[:, 1]])  # Creates numpy's arrays from lists
     if more_is_better:

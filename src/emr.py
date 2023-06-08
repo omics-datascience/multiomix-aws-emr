@@ -21,12 +21,12 @@ def schedule(name: str, algorithm: Algorithms,
     :param entrypoint_arguments:
     :return:
     """
-    args = _get_args(name, algorithm, entrypoint_arguments)
+    # Replaces all the non-alphanumeric chars from the job name to respect the [\.\-_/#A-Za-z0-9]+ regex
+    job_name = ''.join(e for e in name if e.isalnum() or e in ['.', '-', '_', '/', '#'])
+
+    args = _get_args(job_name, algorithm, entrypoint_arguments)
     client = boto3.client('emr-containers')
     response = None
-
-    # Replaces all the non-alphanumeric chars from the job name to respect the [\.\-_/#A-Za-z0-9]+ regex
-    job_name = ''.join(e for e in args['name'] if e.isalnum() or e in ['.', '-', '_', '/', '#'])
 
     try:
         response = client.start_job_run(

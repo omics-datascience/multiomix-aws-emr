@@ -62,7 +62,7 @@ def schedule(name: str, algorithm: Algorithms,
     return response
 
 
-def get(job_id):
+def get(job_id: str):
     client = boto3.client('emr-containers')
     response = None
     try:
@@ -82,7 +82,7 @@ def get(job_id):
     return response
 
 
-def cancel(job_id):
+def cancel(job_id: str):
     client = boto3.client('emr-containers')
     response = None
     try:
@@ -102,7 +102,7 @@ def cancel(job_id):
     return response
 
 
-def get_spark_submit_params_str(args):
+def get_spark_submit_params_str(args) -> str:
     spark_submit_params = "--py-files s3://{bucket}/py-files/{py_files} --conf " \
                           "spark.kubernetes.driver.podTemplateFile=s3://{bucket}/templates/{driver_template} --conf " \
                           "spark.kubernetes.executor.podTemplateFile=s3://{bucket}/templates/{executor_template} " + \
@@ -131,11 +131,7 @@ def get_spark_submit_params_str(args):
     )
 
 
-def _get_args(
-        name,
-        algorithm,
-        entrypoint_args=None
-):
+def _get_args(name: str, algorithm: Algorithms, entrypoint_args=None) -> Dict[str, Any]:
     if name is None:
         name = _get_random_name(Algorithms(algorithm).name)
 
@@ -185,6 +181,6 @@ def _get_args(
     }
 
 
-def _get_random_name(algorithm):
-    return 'multiomix-' + algorithm.lower().replace('_', '-') + '-' + ''.join(
+def _get_random_name(algorithm_name: str) -> str:
+    return 'multiomix-' + algorithm_name.lower().replace('_', '-') + '-' + ''.join(
         random.choices(string.ascii_lowercase, k=6)) + '-' + ''.join(random.choices(string.digits, k=6))

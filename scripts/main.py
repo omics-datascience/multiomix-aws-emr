@@ -6,7 +6,7 @@ from core import run_bbha_experiment
 from parameters import Parameters
 from utils import get_columns_from_df
 import pandas as pd
-from sklearn.model_selection import cross_val_score, cross_validate
+from sklearn.model_selection import cross_validate
 import numpy as np
 from sksurv.ensemble import RandomSurvivalForest
 from sksurv.svm import FastKernelSurvivalSVM
@@ -90,7 +90,8 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
                 # https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#log-likelihood
                 fitness_value = cph.log_likelihood_
                 end_time = time.time()
-                worker_execution_time = end_time - start  # Duplicated to not consider consumed time by all the metrics below
+                # Duplicated to not consider consumed time by all the metrics below
+                worker_execution_time = end_time - start
 
                 metric_description = 'Log Likelihood (higher is better)'
                 mean_test_time = 0.0
@@ -109,7 +110,8 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
                 )
                 fitness_value = cv_res['test_score'].mean()  # This is the C-Index
                 end_time = time.time()
-                worker_execution_time = end_time - start  # Duplicated to not consider consumed time by all the metrics below
+                # Duplicated to not consider consumed time by all the metrics below
+                worker_execution_time = end_time - start
 
                 metric_description = 'Concordance Index (higher is better)'
                 mean_test_time = np.mean(cv_res['score_time'])
@@ -190,7 +192,7 @@ def compute_cross_validation_spark(
     :param subset: Subset of features to compute the cross validation
     :param y: Y data
     :return: Result tuple with [0] -> fitness value, [1] -> execution time, [2] -> Partition ID, [3] -> Hostname,
-    [4] -> number of evaluated features, [5] -> time lapse description, [6] -> time by iteration and [7] -> avg test time
+    [4] -> number of evaluated features, [5] -> time lapse description, [6] -> time by iteration, [7] -> avg test time
     [8] -> mean of number of iterations of the model inside the CV, [9] -> train score
     """
     # If broadcasting is enabled, the retrieves the Broadcast instance value
@@ -203,29 +205,6 @@ def compute_cross_validation_spark(
     process_result = q.get()
     p.join()
     return process_result
-
-
-def compute_cross_validation_sequential(subset: pd.DataFrame, y: np.ndarray) -> float:
-    """
-    Computes CV to get the Concordance Index
-    :param subset: Subset of features to be used in the model evaluated in the CrossValidation
-    :param y: Classes
-    :return: Average of the C-Index obtained in each CrossValidation fold
-    """
-    start = time.time()
-    res = cross_val_score(
-        CLASSIFIER,
-        subset,
-        y,
-        cv=10,
-        n_jobs=params.n_jobs
-    )
-    end_time = time.time() - start
-    concordance_index_mean = res.mean()
-    logging.info(f'Fitness function with {subset.shape[1]} features: {end_time} seconds | '
-                 f'Concordance Index: {concordance_index_mean}')
-
-    return concordance_index_mean
 
 
 def main():
@@ -268,7 +247,7 @@ def main():
         random_state=params.random_state,
         compute_cross_validation=fitness_function,
         sc=sc,
-        metric_description='concordance index' if params.model != 'clustering' else 'log_likelihood' ,  # TODO: check this, log_likelihood is not always used
+        metric_description='concordance index' if params.model != 'clustering' else 'log_likelihood',  # TODO: check this, log_likelihood is not always used
         debug=params.debug,
         molecules_dataset=params.molecules_dataset,
         clinical_dataset=params.clinical_dataset,

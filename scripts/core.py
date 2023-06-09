@@ -119,7 +119,8 @@ def run_bbha_experiment(
     :param coeff_1: Coefficient 1 required by the enhanced version of the BBHA algorithm.
     :param coeff_2: Coefficient 2 required by the enhanced version of the BBHA algorithm.
     :param binary_threshold: Threshold used in BBHA, None to be computed randomly.
-    :param use_broadcasts_in_spark: If True, it generates a Broadcast value to pass to the fitness function instead of pd.DataFrame. Is ignored if run_in_spark = False.
+    :param use_broadcasts_in_spark: If True, it generates a Broadcast value to pass to the fitness function instead of
+    pd.DataFrame. Is ignored if run_in_spark = False.
     """
     number_of_workers = 1  # TODO: remove
 

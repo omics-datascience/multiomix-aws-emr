@@ -40,7 +40,7 @@ def schedule_job():
 
 
 @app.get("/job/<job_id>")
-def get_job(job_id):
+def get_job(job_id: str):
     emr_response = emr.get(job_id)
     if emr_response is None:
         abort(404)
@@ -58,7 +58,7 @@ def get_job(job_id):
 
 
 @app.delete("/job/<job_id>")
-def cancel_job(job_id):
+def cancel_job(job_id: str):
     emr_response = emr.cancel(job_id)
     if emr_response is None:
         abort(409)

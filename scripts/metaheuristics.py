@@ -26,67 +26,74 @@ CrossValidationSparkResult = Tuple[float, float, int, str, int, str, float, floa
 def report_all_load_balancer_models(n_stars: int, parameters: SVMParameters, stars_subsets: np.ndarray):
     """Reports the predicted times for all the trained models. Useful for DEBUG."""
     start = time.time()
-    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model.pkl', use_min_max=True)
+    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model.pkl',
+                                                         use_min_max=True)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Linear d=1 with MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
-    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model_no_min_max.pkl', use_min_max=False)
+    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters,
+                                                         model_plk='best_linear_model_no_min_max.pkl',
+                                                         use_min_max=False)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Linear d=1 NO MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
-    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model_2.pkl', use_min_max=True, poly_degree=2)
+    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model_2.pkl',
+                                                         use_min_max=True, poly_degree=2)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Linear d=2 with MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
-    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model_2_no_min_max.pkl', use_min_max=False, poly_degree=2)
+    predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters,
+                                                         model_plk='best_linear_model_2_no_min_max.pkl',
+                                                         use_min_max=False, poly_degree=2)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Linear d=2 NO MinMax (in {diff} seconds): {stars_and_times_aux}')
     start = time.time()
     predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters,
-                                                      model_plk='best_gradient_booster_model.pkl', use_min_max=True)
+                                                         model_plk='best_gradient_booster_model.pkl', use_min_max=True)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Gradient booster with MinMax (in {diff} seconds): {stars_and_times_aux}')
     start = time.time()
     predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters,
-                                                      model_plk='best_gradient_booster_model_no_min_max.pkl',
-                                                      use_min_max=False)
+                                                         model_plk='best_gradient_booster_model_no_min_max.pkl',
+                                                         use_min_max=False)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Gradient booster NO MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
     predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_linear_model_3.pkl',
-                                                      use_min_max=True, poly_degree=3)
+                                                         use_min_max=True, poly_degree=3)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Linear d=3 with MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
     predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters,
-                                                      model_plk='best_linear_model_3_no_min_max.pkl', use_min_max=False,
-                                                      poly_degree=3)
+                                                         model_plk='best_linear_model_3_no_min_max.pkl',
+                                                         use_min_max=False,
+                                                         poly_degree=3)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted Linear d=3 NO MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
     predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters, model_plk='best_nn_model.pkl',
-                                                      use_min_max=True)
+                                                         use_min_max=True)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted NN with MinMax (in {diff} seconds): {stars_and_times_aux}')
 
     start = time.time()
     predicted_times_aux, _ = predict_execution_times_svm(stars_subsets, parameters,
-                                                      model_plk='best_nn_model_no_min_max.pkl', use_min_max=False)
+                                                         model_plk='best_nn_model_no_min_max.pkl', use_min_max=False)
     diff = round(time.time() - start, 4)
     stars_and_times_aux = {k: round(v, 4) for (k, v) in zip(range(n_stars), predicted_times_aux)}
     logging.info(f'Predicted NN NO MinMax (in {diff} seconds): {stars_and_times_aux}')
@@ -111,7 +118,7 @@ def predict_execution_times_svm(stars: np.ndarray, parameters: SVMParameters,
     trained_model: GradientBoostingRegressor = joblib.load(os.path.join(SVM_TRAINED_MODELS_DIR, model_plk))
     ord_encoder: OrdinalEncoder = joblib.load(os.path.join(SVM_TRAINED_MODELS_DIR, 'ord_encoder.pkl'))
 
-    # Prevents errors for first load balancer models which were trained with less data than real. So this prevents
+    # Prevents errors for first load balancer models which were trained with fewer data than real. So this prevents
     # errors with unknown values
     ord_encoder.handle_unknown = 'use_encoded_value'
     ord_encoder.unknown_value = -1
@@ -171,7 +178,8 @@ def get_best_spark(
     """
     # Converts to a Numpy array to discard the star's index
     workers_results_np = np.array(workers_results)
-    workers_results_np_aux = np.array([np.array(a_list) for a_list in workers_results_np[:, 1]])  # Creates numpy's arrays from lists
+    workers_results_np_aux = np.array(
+        [np.array(a_list) for a_list in workers_results_np[:, 1]])  # Creates Numpy arrays from lists
     if more_is_better:
         best_idx = np.argmax(workers_results_np_aux[:, 0])
     else:
@@ -274,7 +282,8 @@ def parallelize_fitness_execution_by_partitions(
         stars_and_partitions = generate_stars_and_partitions_bins(bins)
         partition_f = lambda key: stars_and_partitions[key]
     else:
-        stars_and_times = {star_idx: -1.0 for star_idx in range(n_stars)}  # Assigns -1.0 to all the stars in case predictions are disabled
+        stars_and_times = {star_idx: -1.0 for star_idx in
+                           range(n_stars)}  # Assigns -1.0 to all the stars in case predictions are disabled
         partition_f = lambda key: key * number_of_workers // len(stars_subsets)
 
     # NOTE: the mapPartitions() allows Scikit-surv models to use all the worker's cores during CrossValidation.
@@ -473,20 +482,22 @@ def binary_black_hole_spark(
     Computes the metaheuristic Binary Black Hole Algorithm in a Spark cluster. Taken from the paper
     "Binary black hole algorithm for feature selection and classification on biological data"
     Authors: Elnaz Pashaei, Nizamettin Aydin.
-    :param n_stars: Number of stars
-    :param n_features: Number of features
-    :param n_iterations: Number of iterations
-    :param fitness_function: Fitness function to compute on every star
-    :param sc: Spark Context
-    :param use_load_balancer: If True, assigns a partition ID using a load balancer. If False, distributes sequentially
-    :param number_of_workers: Number of workers in the Spark cluster
-    :param parameters: Parameters of the RF/SVM for the load balancer. Only used if 'use_load_balancer' = True
-    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise (LogRank p-value)
+    :param n_stars: Number of stars.
+    :param n_features: Number of features.
+    :param n_iterations: Number of iterations.
+    :param fitness_function: Fitness function to compute on every star.
+    :param sc: Spark Context.
+    :param use_load_balancer: If True, assigns a partition ID using a load balancer. If False, distributes sequentially.
+    :param number_of_workers: Number of workers in the Spark cluster.
+    :param parameters: Parameters of the RF/SVM for the load balancer. Only used if 'use_load_balancer' = True.
+    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise
+    (LogRank p-value).
     :param random_state: Random state to replicate experiments. It allows to set the same number of features for every
     star and the same shuffling.
-    :param binary_threshold: Binary threshold to set 1 or 0 the feature. If None it'll be computed randomly
-    :param debug: If True logs everything is happening inside BBHA
-    :return: The best subset found, the best fitness value found, the data returned by the Worker for the Black Hole, and all the data collected about times and execution during the experiment
+    :param binary_threshold: Binary threshold to set 1 or 0 the feature. If None it'll be computed randomly.
+    :param debug: If True logs everything is happening inside BBHA.
+    :return: The best subset found, the best fitness value found, the data returned by the Worker for the Black Hole,
+    and all the data collected about times and execution during the experiment.
     """
     # Lists for storing times and fitness data to train models
     number_of_features: List[int] = []
@@ -604,12 +615,14 @@ def binary_black_hole_spark(
             # and the sum of all the execution times for every star every Worker got
             if host_name not in workers_execution_times:
                 workers_execution_times[host_name] = 0.0
-            workers_execution_times[host_name] += worker_execution_time  # Adds the time of the Worker to compute this star
+            workers_execution_times[
+                host_name] += worker_execution_time  # Adds the time of the Worker to compute this star
 
             if debug:
-                logging.info(f'{star_idx} star took {round(worker_execution_time, 3)} seconds ({time_lapse_description}) '
-                             f'for {evaluated_features} features. Partition: {partition_id} | '
-                             f'Host name: {host_name}. Fitness: {current_fitness_mean}')
+                logging.info(
+                    f'{star_idx} star took {round(worker_execution_time, 3)} seconds ({time_lapse_description}) '
+                    f'for {evaluated_features} features. Partition: {partition_id} | '
+                    f'Host name: {host_name}. Fitness: {current_fitness_mean}')
 
         # Stores the idle time for every worker in this iteration
         for host_name, sum_execution_times in workers_execution_times.items():
@@ -620,7 +633,8 @@ def binary_black_hole_spark(
                 workers_execution_times_per_iteration[host_name] = []
 
             if debug:
-                logging.info(f'The worker {host_name} has taken ~{sum_execution_times} seconds to compute all its stars')
+                logging.info(
+                    f'The worker {host_name} has taken ~{sum_execution_times} seconds to compute all its stars')
 
             workers_execution_times_per_iteration[host_name].append((i, sum_execution_times))
             workers_idle_times[host_name].append((i, total_iteration_time - sum_execution_times))
@@ -640,7 +654,8 @@ def binary_black_hole_spark(
                     (not more_is_better and current_fitness < black_hole_fitness):
                 if debug:
                     logging.info(f'Changing Black hole for star in position {a} of the array,'
-                                 f' BH fitness -> {black_hole_fitness} | Star in position {a} fitness -> {current_fitness}')
+                                 f' BH fitness -> {black_hole_fitness} | '
+                                 f'Star in position {a} fitness -> {current_fitness}')
                 black_hole_idx = a
                 black_hole_subset, current_star_subset = current_star_subset, black_hole_subset
                 black_hole_data, current_data = current_data, black_hole_data
@@ -651,7 +666,8 @@ def binary_black_hole_spark(
                     black_hole_subset):
                 if debug:
                     logging.info(f'Changing Black hole for star in position {a} of the array,'
-                                 f' BH fitness -> {black_hole_fitness} | Star in position {a} fitness -> {current_fitness}')
+                                 f' BH fitness -> {black_hole_fitness} | '
+                                 f'Star in position {a} fitness -> {current_fitness}')
                 black_hole_idx = a
                 black_hole_subset, current_star_subset = current_star_subset, black_hole_subset
                 black_hole_data, current_data = current_data, black_hole_data
@@ -702,7 +718,8 @@ def binary_black_hole_spark(
         'number_of_iterations': num_of_iterations,
         'hosts': hosts,
         'workers_execution_times_per_iteration': workers_execution_times_per_iteration,
-        'workers_idle_times': workers_idle_times_res,  # Yes, names are confusing, but workers_idle_times_res has mean and std
+        'workers_idle_times': workers_idle_times_res,
+        # Yes, names are confusing, but workers_idle_times_res has mean and std
         'workers_idle_times_per_iteration': workers_idle_times,
         'partition_ids': partition_ids
     }

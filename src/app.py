@@ -1,5 +1,7 @@
 import os
 import emr
+import logging
+import validations
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
@@ -16,10 +18,9 @@ def index():
 @app.post("/job")
 def schedule_job():
     request_data = request.get_json()
-    if request_data is None or \
-            "name" not in request_data or \
-            "algorithm" not in request_data or \
-            "entrypoint_arguments" not in request_data:
+    if not validations.schedule_request_is_valid(request_data):
+        logging.warning('Invalid data received:')
+        logging.warning(request_data)
         abort(400)
 
     emr_response = emr.schedule(
@@ -48,10 +49,10 @@ def get_job(job_id: str):
     resp = make_response({
         "id": emr_response["jobRun"]["id"],
         "createdAt": emr_response["jobRun"]["createdAt"],
-        "finishedAt": emr_response["jobRun"]["finishedAt"],
+        "finishedAt": emr_response["jobRun"]["finishedAt"] if 'finishedAt' in emr_response['jobRun'] else None,
         "name": emr_response["jobRun"]["name"],
         "state": emr_response["jobRun"]["state"],
-        "stateDetails": emr_response["jobRun"]["stateDetails"],
+        "stateDetails": emr_response["jobRun"]["stateDetails"] if 'stateDetails' in emr_response['jobRun'] else None,
     }, 200)
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
     return resp

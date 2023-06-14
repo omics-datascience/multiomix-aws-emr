@@ -12,19 +12,17 @@ class Algorithms(Enum):
     BBHA = 1
 
 
-def schedule(name: str, algorithm: Algorithms,
+def schedule(job_name: str, algorithm: Algorithms,
              entrypoint_arguments: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     """
     TODO: document
-    :param name:
+    :param job_name:
     :param algorithm:
     :param entrypoint_arguments:
     :return:
     """
-    # Replaces all the non-alphanumeric chars from the job name to respect the [\.\-_/#A-Za-z0-9]+ regex
-    job_name = ''.join(e for e in name if e.isalnum() or e in ['.', '-', '_', '/', '#'])
-
     args = _get_args(job_name, algorithm, entrypoint_arguments)
+
     client = boto3.client('emr-containers')
     response = None
 
@@ -154,7 +152,7 @@ def _get_args(name: str, algorithm: Algorithms, entrypoint_args=None) -> Dict[st
         prefix = os.getenv('ENTRYPOINT_ARGS_KEY_PREFIX', "--")
         for element in entrypoint_args:
             clean_entrypoint_args.append(prefix + element["name"])
-            clean_entrypoint_args.append(element["value"])
+            clean_entrypoint_args.append(str(element["value"]))
         entrypoint_args = clean_entrypoint_args
 
     return {

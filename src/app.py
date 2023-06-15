@@ -5,7 +5,6 @@ import logging
 import validations
 from flask import Flask, url_for, request, make_response, abort
 
-
 # BioAPI version
 VERSION = '0.1.3'
 
@@ -51,19 +50,24 @@ def get_job(job_id: str):
 
     return resp
 
+
 def __get_job(job_id) -> object:
     emr_response = emr.get(job_id)
     if emr_response is None:
         return None
-    
+
+    # To prevent PEP8 warning
+    finished = emr_response["jobRun"]["finishedAt"].isoformat(' ') if 'finishedAt' in emr_response['jobRun'] else None
+
     return {
         "id": emr_response["jobRun"]["id"],
         "createdAt": emr_response["jobRun"]["createdAt"].isoformat(' '),
-        "finishedAt": emr_response["jobRun"]["finishedAt"].isoformat(' ') if 'finishedAt' in emr_response['jobRun'] else None,
+        "finishedAt": finished,
         "name": emr_response["jobRun"]["name"],
         "state": emr_response["jobRun"]["state"],
         "stateDetails": emr_response["jobRun"]["stateDetails"] if 'stateDetails' in emr_response['jobRun'] else None,
     }
+
 
 @app.delete("/job/<job_id>")
 def cancel_job(job_id: str):
@@ -84,14 +88,13 @@ def change_status_job(job_id: str):
     resp.headers['Location'] = url_for('get_job', job_id=job_id)
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
     app.logger.info("Job id: '{id}' is now in '{state}' state".format(id=job_id, state=request.json.get("state", None)))
-    body=__get_job(job_id)
-    
+    body = __get_job(job_id)
+
     try:
         requests.post(os.getenv("MULTIOMIX_URL"), json=body)
     except requests.exceptions.ConnectionError as err:
         app.logger.error(err)
-    
-    
+
     return resp
 
 

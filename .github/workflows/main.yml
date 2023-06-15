@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Get version for tagging
-        run: ./tools/get_version.sh >> $GITHUB_ENV            
+        run: SETTINGSFILE=$(pwd)/src/app.py ./tools/get_version.sh >> $GITHUB_ENV            
       - name: Create and push tag
         uses: anothrNick/github-tag-action@1.36.0
         env:

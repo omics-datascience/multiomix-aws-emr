@@ -1,25 +1,34 @@
+import logging
 import random
 import string
 import os
 import boto3
+from typing import Any, Dict, Optional
 from enum import Enum
+
 
 class Algorithms(Enum):
     BLIND_SEARCH = 0
     BBHA = 1
 
 
-def schedule(
-        name,
-        algorithm,
-        entrypoint_arguments=None
-):
-    args = _get_args(name, algorithm, entrypoint_arguments)
+def schedule(job_name: str, algorithm: Algorithms,
+             entrypoint_arguments: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """
+    TODO: document
+    :param job_name:
+    :param algorithm:
+    :param entrypoint_arguments:
+    :return:
+    """
+    args = _get_args(job_name, algorithm, entrypoint_arguments)
+
     client = boto3.client('emr-containers')
     response = None
+
     try:
         response = client.start_job_run(
-            name=args['name'],
+            name=job_name,
             virtualClusterId=args['virtual_cluster'],
             executionRoleArn=args['execution_role'],
             releaseLabel=args['release_label'],
@@ -40,18 +49,18 @@ def schedule(
             }
         )
     except client.exceptions.ValidationException as err:
-        print("Job validation exception")
-        print(err.response['Error']['Message'])
+        logging.error("Job validation exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.ResourceNotFoundException as err:
-        print("Resource not found exception")
-        print(err.response['Error']['Message'])
+        logging.error("Resource not found exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.InternalServerException as err:
-        print(err.response['Error']['Message'])
+        logging.error(err.response['Error']['Message'])
 
     return response
 
 
-def get(job_id):
+def get(job_id: str):
     client = boto3.client('emr-containers')
     response = None
     try:
@@ -60,18 +69,18 @@ def get(job_id):
             virtualClusterId=os.getenv('EMR_VIRTUAL_CLUSTER_ID')
         )
     except client.exceptions.ValidationException as err:
-        print("Job validation exception")
-        print(err.response['Error']['Message'])
+        logging.error("Job validation exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.ResourceNotFoundException as err:
-        print("Resource not found exception")
-        print(err.response['Error']['Message'])
+        logging.error("Resource not found exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.InternalServerException as err:
-        print(err.response['Error']['Message'])
+        logging.error(err.response['Error']['Message'])
 
     return response
 
 
-def cancel(job_id):
+def cancel(job_id: str):
     client = boto3.client('emr-containers')
     response = None
     try:
@@ -80,18 +89,18 @@ def cancel(job_id):
             virtualClusterId=os.getenv('EMR_VIRTUAL_CLUSTER_ID')
         )
     except client.exceptions.ValidationException as err:
-        print("Job validation exception")
-        print(err.response['Error']['Message'])
+        logging.error("Job validation exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.ResourceNotFoundException as err:
-        print("Resource not found exception")
-        print(err.response['Error']['Message'])
+        logging.error("Resource not found exception")
+        logging.error(err.response['Error']['Message'])
     except client.exceptions.InternalServerException as err:
-        print(err.response['Error']['Message'])
+        logging.error(err.response['Error']['Message'])
 
     return response
 
 
-def get_spark_submit_params_str(args):
+def get_spark_submit_params_str(args) -> str:
     spark_submit_params = "--py-files s3://{bucket}/py-files/{py_files} --conf " \
                           "spark.kubernetes.driver.podTemplateFile=s3://{bucket}/templates/{driver_template} --conf " \
                           "spark.kubernetes.executor.podTemplateFile=s3://{bucket}/templates/{executor_template} " + \
@@ -120,11 +129,7 @@ def get_spark_submit_params_str(args):
     )
 
 
-def _get_args(
-        name,
-        algorithm,
-        entrypoint_args=None
-):
+def _get_args(name: str, algorithm: Algorithms, entrypoint_args=None) -> Dict[str, Any]:
     if name is None:
         name = _get_random_name(Algorithms(algorithm).name)
 
@@ -147,7 +152,7 @@ def _get_args(
         prefix = os.getenv('ENTRYPOINT_ARGS_KEY_PREFIX', "--")
         for element in entrypoint_args:
             clean_entrypoint_args.append(prefix + element["name"])
-            clean_entrypoint_args.append(element["value"])
+            clean_entrypoint_args.append(str(element["value"]))
         entrypoint_args = clean_entrypoint_args
 
     return {
@@ -174,6 +179,6 @@ def _get_args(
     }
 
 
-def _get_random_name(algorithm):
-    return 'multiomix-' + algorithm.lower().replace('_', '-') + '-' + ''.join(
+def _get_random_name(algorithm_name: str) -> str:
+    return 'multiomix-' + algorithm_name.lower().replace('_', '-') + '-' + ''.join(
         random.choices(string.ascii_lowercase, k=6)) + '-' + ''.join(random.choices(string.digits, k=6))

@@ -18,8 +18,8 @@ ENV EKS_EMR_SERVICE_URL "multiomix-aws-emr"
 ENV AWS_DEFAULT_REGION ""
 ENV AWS_ACCESS_KEY_ID ""
 ENV AWS_SECRET_ACCESS_KEY ""
-ENV ALGO_BLIND_SEARCH_ENTRYPOINT "main.py"
-ENV ALGO_BLIND_SEARCH_PY_FILES "scripts.zip"
+ENV ALGO_BBHA_ENTRYPOINT "main.py"
+ENV ALGO_BBHA_PY_FILES "scripts.zip"
 ENV ALGO_BLIND_SEARCH_ENTRYPOINT "main.py"
 ENV ALGO_BLIND_SEARCH_PY_FILES "scripts.zip"
 ENV ENTRYPOINT_ARGS_KEY_PREFIX "--"
@@ -28,8 +28,12 @@ ENV ENTRYPOINT_ARGS_KEY_PREFIX "--"
 ENV WEB_CONCURRENCY 1
 
 # Installs Python requirements and app files
+ADD config/requirements.txt /requirements.txt
+RUN pip install --upgrade pip && pip install -r /requirements.txt
+RUN rm -f /requirements.txt
+
+# Adds app files
 ADD src/ /app/
-RUN pip install --upgrade pip && pip install -r /app/config/requirements.txt 
 
 # Needed to make docker-compose `command` work
 WORKDIR /app

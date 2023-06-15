@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Get version for tagging
-        run: ./tools/get_version.sh >> $GITHUB_ENV            
+        run: SETTINGSFILE=$(pwd)/src/app.py ./tools/get_version.sh >> $GITHUB_ENV            
       - name: Build and push
         uses: docker/build-push-action@v2
         with:

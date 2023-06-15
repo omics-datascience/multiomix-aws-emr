@@ -166,3 +166,6 @@ templates/**/*-prod.json
 
 # Production file
 docker-compose.yml
+
+# Spark scripts zip
+scripts/scripts.zip

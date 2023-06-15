@@ -7,7 +7,7 @@ from flask import Flask, url_for, request, make_response, abort
 
 
 # BioAPI version
-VERSION = '0.1.2'
+VERSION = '0.1.3'
 
 app = Flask(__name__)
 
@@ -59,10 +59,10 @@ def __get_job(job_id) -> object:
     return {
         "id": emr_response["jobRun"]["id"],
         "createdAt": emr_response["jobRun"]["createdAt"].isoformat(' '),
-        "finishedAt": emr_response["jobRun"]["finishedAt"].isoformat(' '),
+        "finishedAt": emr_response["jobRun"]["finishedAt"].isoformat(' ') if 'finishedAt' in emr_response['jobRun'] else None,
         "name": emr_response["jobRun"]["name"],
         "state": emr_response["jobRun"]["state"],
-        "stateDetails": emr_response["jobRun"]["stateDetails"],
+        "stateDetails": emr_response["jobRun"]["stateDetails"] if 'stateDetails' in emr_response['jobRun'] else None,
     }
 
 @app.delete("/job/<job_id>")

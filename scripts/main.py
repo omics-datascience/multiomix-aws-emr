@@ -222,7 +222,6 @@ def main():
             parameters_description = f'{params.number_of_clusters}_clusters_{params.clustering_algorithm}_algorithm'
 
     # Spark settings
-    app_name = f"BBHA_{time.time()}".replace('.', '_')
     sc = SparkContext()
     sc.setLogLevel("ERROR")
 
@@ -237,7 +236,7 @@ def main():
 
     # Runs normal Feature Selection experiment using BBHA
     run_bbha_experiment(
-        app_name=app_name,
+        app_name=params.app_name,
         use_load_balancer=params.use_load_balancer and params.model == 'svm',  # TODO: implement for the RF and Cox Regression
         more_is_better=True,  # params.model != 'clustering',  # CoxRegression is evaluated by the log likelihood. If it is lower, better! TODO: parametrize the clustering metric
         svm_kernel=svm_kernel,

@@ -147,13 +147,13 @@ def run_bbha_experiment(
     dir_path = os.path.join(current_script_dir_name, app_folder)
     create_folder_with_permissions(dir_path)
 
-    best_metric_with_all_features = f'{metric_description} with all the features'
-    best_metric_in_runs_key = f'Best {metric_description} (in {number_of_independent_runs} runs)'
-    res_csv = pd.DataFrame(columns=['dataset', 'Improved BBHA', 'Model',
+    best_metric_with_all_features = 'best_metric_with_all_features'
+    best_metric_in_runs_key = 'best_metric'
+    res_csv = pd.DataFrame(columns=['dataset', 'improved', 'model',
                                     best_metric_with_all_features,
                                     best_metric_in_runs_key,
-                                    f'Features with best {metric_description} (in {number_of_independent_runs} runs)',
-                                    f'CPU execution time ({number_of_independent_runs} runs) in seconds'])
+                                    'features',
+                                    'execution_time'])
 
     # Gets survival data
     x, y = read_survival_data(molecules_dataset, clinical_dataset)
@@ -296,12 +296,12 @@ def run_bbha_experiment(
 
         experiment_results_dict = {
             'dataset': molecules_dataset,
-            'Improved BBHA': 1 if run_improved else 0,
-            'Model': model_name,
+            'improved': 1 if run_improved else 0,
+            'model': model_name,
             best_metric_with_all_features: round(all_features_concordance_index, 4),
             best_metric_in_runs_key: round(best_metric, 4),
-            f'Features with best {metric_description} (in {number_of_independent_runs} runs)': ' | '.join(final_subset),
-            f'CPU execution time ({number_of_independent_runs} runs) in seconds': independent_run_time
+            'features': ' | '.join(final_subset),
+            'execution_time': independent_run_time
         }
 
         # Some extra reporting

@@ -1,7 +1,10 @@
 import os
 import emr
 import requests
-from flask import Flask, url_for, request, make_response, abort,redirect
+import logging
+import validations
+from flask import Flask, url_for, request, make_response, abort
+
 
 # BioAPI version
 VERSION = '0.1.2'
@@ -17,10 +20,9 @@ def index():
 @app.post("/job")
 def schedule_job():
     request_data = request.get_json()
-    if request_data is None or \
-            "name" not in request_data or \
-            "algorithm" not in request_data or \
-            "entrypoint_arguments" not in request_data:
+    if not validations.schedule_request_is_valid(request_data):
+        logging.warning('Invalid data received:')
+        logging.warning(request_data)
         abort(400)
 
     emr_response = emr.schedule(

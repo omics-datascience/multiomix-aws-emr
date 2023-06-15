@@ -5,6 +5,10 @@ from utils import ModelName
 
 class Parameters:
     """Gets all the parameters from CLI."""
+    # App name, a folder with the same name will be created with the results
+    app_name: str
+
+    # URL to connect to the master
     master_connection_url: str
 
     # To use a Broadcast value instead of a pd.DataFrame
@@ -73,6 +77,7 @@ class Parameters:
         parser = ArgumentParser()
 
         # General parameters
+        parser.add_argument("--app-name", dest='app_name', help="URL to connect to the master", type=str)
         parser.add_argument("--master", dest='master', help="URL to connect to the master", type=str,
                             default="spark://master-node:7077")
         parser.add_argument("--molecules-dataset", dest='molecules_dataset',
@@ -144,6 +149,7 @@ class Parameters:
         args = parser.parse_args()
 
         # Assigns parameters
+        self.app_name = args.app_name
         self.master_connection_url = args.master
         self.svm_kernel = args.svm_kernel
         self.svm_optimizer = args.svm_optimizer

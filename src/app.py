@@ -51,7 +51,7 @@ def get_job(job_id: str):
 
     return resp
 
-def __get_job(job_id):
+def __get_job(job_id) -> object:
     emr_response = emr.get(job_id)
     if emr_response is None:
         return None

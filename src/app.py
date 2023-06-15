@@ -1,9 +1,10 @@
 import os
 import emr
-from flask import Flask, url_for, request, make_response, abort
+import requests
+from flask import Flask, url_for, request, make_response, abort,redirect
 
 # BioAPI version
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 app = Flask(__name__)
 
@@ -28,9 +29,8 @@ def schedule_job():
         request_data["entrypoint_arguments"]
     )
 
-    # If the response is None, returns a 500 error
     if emr_response is None:
-        return make_response({"error": "Internal server error"}, 500)
+        abort(500)
 
     resp = make_response({"id": emr_response["id"]}, 201)
     resp.headers['Location'] = url_for('get_job', job_id=emr_response["id"])
@@ -41,21 +41,27 @@ def schedule_job():
 
 @app.get("/job/<job_id>")
 def get_job(job_id: str):
+    obj = __get_job(job_id)
+    if obj is None:
+        abort(404)
+    resp = make_response(obj, 200)
+    resp.headers['Content-Type'] = "application/json; charset=utf-8"
+
+    return resp
+
+def __get_job(job_id):
     emr_response = emr.get(job_id)
     if emr_response is None:
-        abort(404)
-
-    resp = make_response({
+        return None
+    
+    return {
         "id": emr_response["jobRun"]["id"],
-        "createdAt": emr_response["jobRun"]["createdAt"],
-        "finishedAt": emr_response["jobRun"]["finishedAt"],
+        "createdAt": emr_response["jobRun"]["createdAt"].isoformat(' '),
+        "finishedAt": emr_response["jobRun"]["finishedAt"].isoformat(' '),
         "name": emr_response["jobRun"]["name"],
         "state": emr_response["jobRun"]["state"],
         "stateDetails": emr_response["jobRun"]["stateDetails"],
-    }, 200)
-    resp.headers['Content-Type'] = "application/json; charset=utf-8"
-    return resp
-
+    }
 
 @app.delete("/job/<job_id>")
 def cancel_job(job_id: str):
@@ -76,9 +82,14 @@ def change_status_job(job_id: str):
     resp.headers['Location'] = url_for('get_job', job_id=job_id)
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
     app.logger.info("Job id: '{id}' is now in '{state}' state".format(id=job_id, state=request.json.get("state", None)))
-    # TODO: implement logic to notify Upwards to the MultiomixURL/feature-selection/aws-notification/<job_id>/ endpoint
-    # TODO: send the same fields as get_job() returns
-
+    body=__get_job(job_id)
+    
+    try:
+        requests.post(os.getenv("MULTIOMIX_URL"), json=body)
+    except requests.exceptions.ConnectionError as err:
+        app.logger.error(err)
+    
+    
     return resp
 
 

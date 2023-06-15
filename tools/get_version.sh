@@ -1,2 +1,3 @@
 #!/bin/bash
-echo "VERSION=0.1.1"
+VERSION=$(grep -i 'VERSION =' $SETTINGSFILE | cut -d '=' -f2 | tr -d "' ")
+echo "VERSION=$VERSION"

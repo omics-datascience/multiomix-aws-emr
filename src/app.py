@@ -101,6 +101,6 @@ def change_status_job(job_id: str):
 if __name__ == "__main__":
     # TODO: document both PORT and IS_DEBUG env vars
     port_str = os.environ.get('PORT', '8003')
-    is_debug = os.environ.get('IS_DEBUG', 'true') == 'true'
+    is_debug = os.environ.get('DEBUG', 'true') == 'true'
     port = int(port_str)
-    app.run(host='localhost', port=port, debug=is_debug)
+    app.run(host='127.0.0.1', port=port, debug=is_debug)

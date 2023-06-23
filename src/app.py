@@ -1,7 +1,6 @@
 import os
 import emr
 import requests
-import logging
 import validations
 from flask import Flask, url_for, request, make_response, abort
 
@@ -20,8 +19,8 @@ def index():
 def schedule_job():
     request_data = request.get_json()
     if not validations.schedule_request_is_valid(request_data):
-        logging.warning('Invalid data received:')
-        logging.warning(request_data)
+        app.logger.warning('Invalid data received:')
+        app.logger.warning(request_data)
         abort(400)
 
     emr_response = emr.schedule(
@@ -87,12 +86,27 @@ def change_status_job(job_id: str):
     resp = make_response({"id": job_id}, 204)
     resp.headers['Location'] = url_for('get_job', job_id=job_id)
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
-    app.logger.info("Job id: '{id}' is now in '{state}' state".format(id=job_id, state=request.json.get("state", None)))
+
+    # Logs some data
+    state = request.json.get("state", None)
+    app.logger.info(f"Job id: '{job_id}' is now in '{state}' state")
+
     body = __get_job(job_id)
 
+    # Gets the endpoint from env var
+    multiomix_endpoint = os.getenv("MULTIOMIX_URL", '')
+    multiomix_endpoint = multiomix_endpoint.rstrip('/')
+    multiomix_url = f"{multiomix_endpoint}/{job_id}/"
+
+    # Sends the request to Multiomix
+    timeout = 100  # Almost 2 minutes (there's a timeout of 2 minutes in NGINX proxy)
     try:
-        requests.post(os.getenv("MULTIOMIX_URL"), json=body)
+        requests.post(multiomix_url, json=body, timeout=timeout)
+    except requests.exceptions.Timeout as err:
+        app.logger.error(f'Timeout error for "{multiomix_url}":')
+        app.logger.error(err)
     except requests.exceptions.ConnectionError as err:
+        app.logger.error(f'Connection error for "{multiomix_url}":')
         app.logger.error(err)
 
     return resp

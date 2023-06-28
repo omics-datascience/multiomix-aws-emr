@@ -128,7 +128,7 @@ class Parameters:
         parser.add_argument("--number-of-clusters", dest='number_of_clusters',
                             help="Number of clusters to group by molecule expressions during clustering algorithm",
                             type=int, default=2)
-        # TODO: implement scoring-method parameter for C-Index or Log likelihood
+        # TODO: implement 'metric', 'scoring method' and 'penalizer' paramters for C-Index or Log likelihood
 
         # CV parameters
         parser.add_argument("--n-jobs", dest='n_jobs',

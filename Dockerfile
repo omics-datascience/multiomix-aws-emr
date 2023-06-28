@@ -13,7 +13,7 @@ ENV EMR_EXECUTOR_MEMORY 2g
 ENV EMR_EXECUTOR_INSTANCES 3
 ENV DATASETS_PATH "/var/data"
 ENV RESULTS_PATH "/var/results"
-ENV MULTIOMIX_URL "multiomix"
+ENV MULTIOMIX_URL "http://multiomix/feature-selection/aws-notification/"
 ENV EKS_EMR_SERVICE_URL "multiomix-aws-emr"
 ENV AWS_DEFAULT_REGION ""
 ENV AWS_ACCESS_KEY_ID ""

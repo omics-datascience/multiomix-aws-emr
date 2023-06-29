@@ -42,9 +42,6 @@ class Parameters:
     # If True, load balancer is used to generate Spark partitions
     use_load_balancer: bool
 
-    # Number of independent complete runs to get the best parameters
-    number_of_independent_runs: int
-
     # Filename of the dataset with molecule expressions to use
     molecules_dataset: str
 
@@ -64,7 +61,10 @@ class Parameters:
     tree_n_jobs: int
 
     # Clustering algorithm to use
-    clustering_algorithm: Literal["kmeans", "spectral"]
+    clustering_algorithm: Literal["k_means", "spectral"]
+
+    # Clustering scoring method
+    clustering_scoring_method: Literal["concordance_index", "log_likelihood"]
 
     # Number of clusters to group by molecule expressions during clustering algorithm
     number_of_clusters: int
@@ -87,10 +87,7 @@ class Parameters:
                             help="Filename of the dataset with clinical data to use. This file must be in the "
                                  "shared folder", type=str)
         parser.add_argument("--model", dest='model', choices=['svm', 'rf', 'clustering'],
-                            help="Classifier to use in the metaheuristic", type=str, default="svm")
-        parser.add_argument('--independent-runs', dest='number_of_independent_runs',
-                            help="Number of independent complete runs to get the best parameters", type=int,
-                            default=1)  # TODO: change default to 3
+                            help="Classifier to use in the metaheuristic", type=str)
         parser.add_argument('--use-load-balancer', dest='use_load_balancer',
                             help="If True, load balancer is used to generate Spark partitions", default=True,
                             action='store_true')
@@ -125,6 +122,9 @@ class Parameters:
         # Clustering parameters
         parser.add_argument("--clustering-algorithm", dest='clustering_algorithm', choices=['k_means', 'spectral'],
                             help="Clustering algorithm to use", type=str, default="k_means")
+        parser.add_argument("--clustering-scoring-method", dest='clustering_scoring_method',
+                            choices=['concordance_index', 'log_likelihood'],
+                            help="Clustering scoring method", type=str, default="log_likelihood")
         parser.add_argument("--number-of-clusters", dest='number_of_clusters',
                             help="Number of clusters to group by molecule expressions during clustering algorithm",
                             type=int, default=2)
@@ -159,7 +159,6 @@ class Parameters:
         self.n_stars = args.n_stars
         self.random_state = args.random_state
         self.use_load_balancer = False   # TODO: leave this args.use_load_balancer when implemented
-        self.number_of_independent_runs = args.number_of_independent_runs
         self.molecules_dataset = args.molecules_dataset
         self.clinical_dataset = args.clinical_dataset
         self.bbha_n_iterations = args.bbha_n_iterations
@@ -168,6 +167,7 @@ class Parameters:
         self.svm_is_regression = args.svm_is_regression
         self.svm_max_iterations = args.svm_max_iterations
         self.clustering_algorithm = args.clustering_algorithm
+        self.clustering_scoring_method = args.clustering_scoring_method
         self.number_of_clusters = args.number_of_clusters
         self.use_broadcast = args.use_broadcast
         self.debug = args.debug

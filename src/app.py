@@ -5,7 +5,7 @@ import validations
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.3'
+VERSION = '0.1.4'
 
 app = Flask(__name__)
 

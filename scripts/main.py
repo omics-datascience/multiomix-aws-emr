@@ -43,7 +43,7 @@ else:
 
 def get_clustering_model() -> Union[KMeans, SpectralClustering]:
     """Gets the specified clustering model to train"""
-    if params.clustering_algorithm == 'kmeans':
+    if params.clustering_algorithm == 'k_means':
         return KMeans(n_clusters=params.number_of_clusters)
     elif params.clustering_algorithm == 'spectral':
         return SpectralClustering(n_clusters=params.number_of_clusters)
@@ -87,8 +87,10 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
                 cph = CoxPHFitter().fit(df, duration_col='T', event_col='E')
 
                 # This documentation recommends using log-likelihood to optimize:
-                # https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#log-likelihood
-                fitness_value = cph.log_likelihood_
+                # https://lifelines.readthedocs.io/en/latest/fitters/regression/CoxPHFitter.html#lifelines.fitters.coxph_fitter.SemiParametricPHFitter.score
+                scoring_method = params.clustering_scoring_method
+                fitness_value = cph.score(df, scoring_method=scoring_method)
+
                 end_time = time.time()
                 # Duplicated to not consider consumed time by all the metrics below
                 worker_execution_time = end_time - start
@@ -219,7 +221,8 @@ def main():
         if params.model == 'rf':
             parameters_description = f'{params.rf_n_estimators}_trees'
         else:
-            parameters_description = f'{params.number_of_clusters}_clusters_{params.clustering_algorithm}_algorithm'
+            parameters_description = f'{params.number_of_clusters}_clusters_{params.clustering_algorithm}_algorithm' \
+                                     f'_{params.clustering_scoring_method}_scoring_method'
 
     # Spark settings
     sc = SparkContext()
@@ -250,7 +253,6 @@ def main():
         debug=params.debug,
         molecules_dataset=params.molecules_dataset,
         clinical_dataset=params.clinical_dataset,
-        number_of_independent_runs=params.number_of_independent_runs,
         n_iterations=params.bbha_n_iterations,
         number_of_workers=number_of_workers,
         model_name=params.model,

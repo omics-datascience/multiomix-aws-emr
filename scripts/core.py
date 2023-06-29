@@ -75,7 +75,6 @@ def run_bbha_experiment(
         parameters_description: str,
         molecules_dataset: str,
         clinical_dataset: str,
-        number_of_independent_runs: int,
         n_iterations: int,
         number_of_workers: int,
         use_load_balancer: bool,
@@ -84,7 +83,7 @@ def run_bbha_experiment(
         svm_optimizer: Optional[OptimizerName],
         n_stars: int,
         random_state: Optional[int],
-        run_improved_bbha: Optional[bool] = None,
+        run_improved_bbha: Optional[bool] = False,
         debug: bool = False,
         sc: Optional[SparkContext] = None,
         coeff_1: float = 2.35,
@@ -95,23 +94,23 @@ def run_bbha_experiment(
     """
     Computes the BBHA and/or Improved BBHA algorithm/s
 
-    :param app_name: App name to save the CSV result and all the execution metrics.
+    :param app_name: App name to save the JSON result and all the execution metrics.
     :param compute_cross_validation: Cross Validation function to get the fitness.
-    :param metric_description: Description of the metric returned by the CrossValidation function to display in the CSV.
-    :param model_name: Description of the model used as CrossValidation fitness function to be displayed in the CSV.
+    :param metric_description: Description of the metric returned by the CrossValidation function to
+    display in the JSON.
+    :param model_name: Description of the model used as CrossValidation fitness function to be displayed in the JSON.
     :param parameters_description: Model's parameters description to report in results.
     :param molecules_dataset: Molecules dataset file path.
     :param clinical_dataset: Clinical dataset file path.
     :param number_of_workers: Number of workers nodes in the Spark cluster.
     :param use_load_balancer: If True, assigns a partition ID using a load balancer. If False, distributes sequentially.
-    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise (LogRank p-value).
+    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index),
+    lowest otherwise (LogRank p-value).
     :param svm_kernel: SVM 'kernel' parameter to fill SVMParameter instance. Only used if model used is the SVM.
     :param svm_optimizer: SVM 'optimizer' parameter to fill SVMParameter instance. Only used if model used is the SVM.
-    :param run_improved_bbha: If None runs both algorithm versions. True for improved, False to run the original.
+    :param run_improved_bbha: True for improved, False to run the original.
     :param debug: True to log extra data during script execution.
     :param sc: Spark Context. Only used if 'run_in_spark' = True.
-    :param number_of_independent_runs: Number of independent runs. On every independent run it stores a JSON file with.
-    data from the BBHA execution. This parameter is NOT the number of iterations inside the BBHA algorithm.
     :param n_stars: Number of stars in the BBHA algorithm.
     :param random_state: Random state to replicate experiments. It allows to set the same number of features for every
     star and the same shuffling.
@@ -122,46 +121,27 @@ def run_bbha_experiment(
     :param use_broadcasts_in_spark: If True, it generates a Broadcast value to pass to the fitness function instead of
     pd.DataFrame. Is ignored if run_in_spark = False.
     """
-    number_of_workers = 1  # TODO: remove
-
     if number_of_workers == 0:
         logging.error(f'Invalid number of workers in Spark Cluster ({number_of_workers}). '
                       'Check "number_of_workers" parameter or set "run_in_spark" = False!')
         return
 
-    # CSV where the results will be stored
-    now = time.strftime('%Y-%m-%d_%H_%M_%S')
-    current_script_dir_name = os.path.dirname(__file__)
-
-    # Configures CSV file
+    # Creates a folder to save all the results and time metrics
     results_path = os.getenv('RESULTS_PATH')  # Gets shared folder path
-    create_folder_with_permissions(results_path)
-
     app_folder = os.path.join(results_path, app_name)
-    res_csv_file_path = os.path.join(current_script_dir_name, f'{app_folder}/result_{now}.csv')
+    create_folder_with_permissions(app_folder)
 
-    logging.info(f'Metaheuristic results will be saved in "{res_csv_file_path}"')
+    # Configures JSON file with the Feature Selection results
+    res_json_file_path = os.path.join(app_folder, 'result.json')
+    logging.info(f'Metaheuristic results will be saved in "{res_json_file_path}"')
     logging.info(f'Metrics will be saved in JSON files (one per iteration) inside folder "{app_folder}"')
-
-    # Creates a folder to save all the results and figures
-    dir_path = os.path.join(current_script_dir_name, app_folder)
-    create_folder_with_permissions(dir_path)
-
-    best_metric_with_all_features = 'best_metric_with_all_features'
-    best_metric_in_runs_key = 'best_metric'
-    res_csv = pd.DataFrame(columns=['dataset', 'improved', 'model',
-                                    best_metric_with_all_features,
-                                    best_metric_in_runs_key,
-                                    'features',
-                                    'execution_time'])
 
     # Gets survival data
     x, y = read_survival_data(molecules_dataset, clinical_dataset)
 
     number_samples, number_features = x.shape
 
-    logging.info(f'Running {number_of_independent_runs} independent runs of the BBHA experiment with {n_iterations} '
-                 f'iterations and {n_stars} stars')
+    logging.info(f'Running BBHA experiment with {n_iterations} iterations and {n_stars} stars')
     logging.info(f'Running {n_stars} stars in Spark ({n_stars // number_of_workers} stars per worker). '
                  f'{number_of_workers} active workers in Spark Cluster')
     load_balancer_desc = 'With' if use_load_balancer else 'Without'
@@ -188,130 +168,103 @@ def run_bbha_experiment(
     logging.info(f'Fitness function with all the features finished in {time.time() - start} seconds')
     logging.info(f'{metric_description} with all the features: {all_features_concordance_index}')
 
-    # Check which version of the algorithm want to run
-    if run_improved_bbha is None:
-        improved_options = [False, True]
-    elif run_improved_bbha is True:
-        improved_options = [True]
-    else:
-        improved_options = [False]
-
     experiment_start = time.time()
-    for run_improved in improved_options:
-        improved_mode_str = 'improved' if run_improved else 'normal'
-        logging.info(f'Running {improved_mode_str} algorithm')
-        independent_start_time = time.time()
+    improved_mode_str = 'improved' if run_improved_bbha else 'normal'
+    logging.info(f'Running {improved_mode_str} algorithm')
 
-        final_subset = None  # Final best subset
-        best_metric = -1 if more_is_better else 99999  # Final best metric
+    # Binary Black Hole
+    bh_start = time.time()
+    if run_improved_bbha:
+        json_experiment_data = {}  # No Spark, no data about execution times to store
+        best_subset, best_metric = improved_binary_black_hole(
+            n_stars=n_stars,
+            n_features=number_features,
+            n_iterations=n_iterations,
+            fitness_function=lambda subset: fitness_function_with_checking(
+                compute_cross_validation,
+                subset,
+                x,
+                y,
+                is_broadcast=use_broadcasts_in_spark
+            ),
+            coeff_1=coeff_1,
+            coeff_2=coeff_2,
+            binary_threshold=binary_threshold,
+            debug=debug
+        )
+    else:
+        # Generates parameters to train the ML model for load balancing
+        if use_load_balancer:
+            parameters = SVMParameters(number_samples, svm_kernel, svm_optimizer)
+        else:
+            parameters = None
 
-        for independent_run_i in range(number_of_independent_runs):
-            logging.info(f'Independent run {independent_run_i + 1}/{number_of_independent_runs}')
+        best_subset, best_metric, _best_data, json_experiment_data = binary_black_hole_spark(
+            n_stars=n_stars,
+            n_features=number_features,
+            n_iterations=n_iterations,
+            fitness_function=lambda subset: fitness_function_with_checking(
+                compute_cross_validation,
+                subset,
+                x,
+                y,
+                is_broadcast=use_broadcasts_in_spark
+            ),
+            sc=sc,
+            binary_threshold=binary_threshold,
+            more_is_better=more_is_better,
+            random_state=random_state,
+            debug=debug,
+            use_load_balancer=use_load_balancer,
+            number_of_workers=number_of_workers,
+            parameters=parameters,
+        )
 
-            # Binary Black Hole
-            bh_start = time.time()
-            if run_improved:
-                json_experiment_data = {}  # No Spark, no data about execution times to store
-                best_subset, current_metric = improved_binary_black_hole(
-                    n_stars=n_stars,
-                    n_features=number_features,
-                    n_iterations=n_iterations,
-                    fitness_function=lambda subset: fitness_function_with_checking(
-                        compute_cross_validation,
-                        subset,
-                        x,
-                        y,
-                        is_broadcast=use_broadcasts_in_spark
-                    ),
-                    coeff_1=coeff_1,
-                    coeff_2=coeff_2,
-                    binary_threshold=binary_threshold,
-                    debug=debug
-                )
-            else:
-                # Generates parameters to train the ML model for load balancing
-                if use_load_balancer:
-                    parameters = SVMParameters(number_samples, svm_kernel, svm_optimizer)
-                else:
-                    parameters = None
+    total_fs_execution_time = time.time() - bh_start
+    logging.info(f'Binary Black Hole with {n_iterations} iterations and {n_stars} '
+                 f'stars, finished in {total_fs_execution_time} seconds')
 
-                best_subset, current_metric, _best_data, json_experiment_data = binary_black_hole_spark(
-                    n_stars=n_stars,
-                    n_features=number_features,
-                    n_iterations=n_iterations,
-                    fitness_function=lambda subset: fitness_function_with_checking(
-                        compute_cross_validation,
-                        subset,
-                        x,
-                        y,
-                        is_broadcast=use_broadcasts_in_spark
-                    ),
-                    sc=sc,
-                    binary_threshold=binary_threshold,
-                    more_is_better=more_is_better,
-                    random_state=random_state,
-                    debug=debug,
-                    use_load_balancer=use_load_balancer,
-                    number_of_workers=number_of_workers,
-                    parameters=parameters,
-                )
+    # Gets columns names
+    x_df = x.value if use_broadcasts_in_spark else x
+    column_names = get_columns_from_df(best_subset, x_df).columns.values
+    final_subset = column_names
 
-            iteration_time = time.time() - bh_start
-            logging.info(f'Independent run {independent_run_i + 1}/{number_of_independent_runs} | '
-                         f'Binary Black Hole with {n_iterations} iterations and {n_stars} '
-                         f'stars, finished in {iteration_time} seconds')
+    # Stores data to train future load balancer models
+    # Adds data to JSON
+    json_extra_data = {
+        'model': model_name,
+        'dataset': molecules_dataset,
+        'parameters': parameters_description,
+        'number_of_samples': number_samples
+    }
+    json_experiment_data = {**json_experiment_data, **json_extra_data}
 
-            # Check if current is the best metric
-            if (more_is_better and current_metric > best_metric) or (not more_is_better and current_metric < best_metric):
-                best_metric = current_metric
+    now = time.strftime('%Y-%m-%d_%H_%M_%S')
+    json_file = f'{model_name}_{parameters_description}_{metric_description}_{molecules_dataset}_{now}_results.json'
+    json_file = re.sub(' +', '_', json_file).lower()  # Replaces whitespaces with '_' and makes lowercase
+    json_dest = os.path.join(app_folder, json_file)
 
-                # Gets columns names
-                x_df = x.value if use_broadcasts_in_spark else x
-                column_names = get_columns_from_df(best_subset, x_df).columns.values
-                final_subset = column_names
+    with open(json_dest, 'w+') as file:
+        file.write(json.dumps(json_experiment_data))
 
-            # Stores data to train future load balancer models
-            # Adds data to JSON
-            json_extra_data = {
-                'model': model_name,
-                'dataset': molecules_dataset,
-                'parameters': parameters_description,
-                'number_of_samples': number_samples,
-                'independent_iteration_time': iteration_time
-            }
-            json_experiment_data = {**json_experiment_data, **json_extra_data}
+    # Some extra reporting
+    algorithm = 'BBHA' + (' (improved)' if run_improved_bbha else '')
+    logging.info(f'Found {len(final_subset)} features with {algorithm} ({metric_description} '
+                 f'= {best_metric}):')
+    logging.info(str(final_subset))
 
-            now = time.strftime('%Y-%m-%d_%H_%M_%S')
-            json_file = f'{model_name}_{parameters_description}_{metric_description}_{molecules_dataset}_{now}_' \
-                        f'iteration_{independent_run_i}_results.json'
-            json_file = re.sub(' +', '_', json_file).lower()  # Replaces whitespaces with '_' and makes lowercase
-            json_dest = os.path.join(app_folder, json_file)
+    experiment_results_dict = {
+        'dataset': molecules_dataset,
+        'improved': 1 if run_improved_bbha else 0,
+        'model': model_name,
+        'best_metric_with_all_features': round(all_features_concordance_index, 4),
+        'best_metric': round(best_metric, 4),
+        'features': ' | '.join(final_subset),
+        'execution_time': total_fs_execution_time
+    }
 
-            with open(json_dest, 'w+') as file:
-                file.write(json.dumps(json_experiment_data))
-
-        # Reports final Feature Selection result
-        independent_run_time = round(time.time() - independent_start_time, 3)
-        logging.info(f'{number_of_independent_runs} independent runs finished in {independent_run_time} seconds')
-
-        experiment_results_dict = {
-            'dataset': molecules_dataset,
-            'improved': 1 if run_improved else 0,
-            'model': model_name,
-            best_metric_with_all_features: round(all_features_concordance_index, 4),
-            best_metric_in_runs_key: round(best_metric, 4),
-            'features': ' | '.join(final_subset),
-            'execution_time': independent_run_time
-        }
-
-        # Some extra reporting
-        algorithm = 'BBHA' + (' (improved)' if run_improved else '')
-        logging.info(f'Found {len(final_subset)} features with {algorithm} ({metric_description} '
-                     f'= {best_metric}):')
-        logging.info(final_subset)
-
-        # Saves new data to final CSV
-        res_csv = pd.concat([res_csv, pd.DataFrame([experiment_results_dict])], ignore_index=True)
-        res_csv.to_csv(res_csv_file_path)
+    # Saves new data to final JSON
+    with open(res_json_file_path, 'w+') as file:
+        file.write(json.dumps(experiment_results_dict))
 
     logging.info(f'Experiment completed in {time.time() - experiment_start} seconds')

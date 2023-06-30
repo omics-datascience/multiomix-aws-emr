@@ -240,7 +240,7 @@ def run_bbha_experiment(
     json_experiment_data = {**json_experiment_data, **json_extra_data}
 
     now = time.strftime('%Y-%m-%d_%H_%M_%S')
-    json_file = f'{model_name}_{parameters_description}_{metric_description}_{molecules_dataset}_{now}_results.json'
+    json_file = f'{model_name}_{parameters_description}_{metric_description}_{now}_results.json'
     json_file = re.sub(' +', '_', json_file).lower()  # Replaces whitespaces with '_' and makes lowercase
     json_dest = os.path.join(app_folder, json_file)
 

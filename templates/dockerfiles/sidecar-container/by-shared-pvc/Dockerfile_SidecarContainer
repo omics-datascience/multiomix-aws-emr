@@ -1,0 +1,6 @@
+FROM amazon/aws-cli:amd64
+
+ADD ./driver-emr-sidecar-container.sh /root/init.sh
+WORKDIR /root
+RUN chmod +x init.sh && yum install jq -y
+ENTRYPOINT ["/bin/bash", "-c", "/root/init.sh"]

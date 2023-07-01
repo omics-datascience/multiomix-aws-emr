@@ -1,0 +1,4 @@
+FROM amazon/aws-cli:amd64
+ADD ./driver-emr-sidecar-container.sh /root/init.sh
+WORKDIR /root
+RUN chmod +x init.sh

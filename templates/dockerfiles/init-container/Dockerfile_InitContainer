@@ -1,0 +1,4 @@
+FROM amazon/aws-cli:amd64
+ADD ./driver-emr-init-container.sh /root/init.sh
+WORKDIR /root
+RUN chmod +x init.sh; yum install jq tar gzip -y

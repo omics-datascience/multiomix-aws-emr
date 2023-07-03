@@ -2,11 +2,12 @@ import os
 import emr
 import requests
 import validations
+from time import sleep
 from logging.config import dictConfig
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.6'
+VERSION = '0.1.7'
 
 # Logging config
 dictConfig({
@@ -68,7 +69,7 @@ def get_job(job_id: str):
     return resp
 
 
-def __get_job(job_id) -> object:
+def __get_job(job_id: str) -> object:
     emr_response = emr.get(job_id)
     if emr_response is None:
         return None
@@ -108,6 +109,10 @@ def change_status_job(job_id: str):
     # Logs some data
     state = request.json.get("state", None)
     app.logger.info(f"Job id: '{job_id}' is now in '{state}' state")
+
+    # Temporal sleep to prevent retrieving an old state as EMR takes some time to update the state and inform
+    # this service very quickly
+    sleep(5)
 
     body = __get_job(job_id)
 

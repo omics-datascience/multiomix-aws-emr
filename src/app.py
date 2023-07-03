@@ -1,13 +1,16 @@
 import os
+import time  # TODO: remove
+
 import emr
 import requests
 import validations
 from time import sleep
 from logging.config import dictConfig
+from typing import Dict, Any, Optional
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.8'
+VERSION = '0.1.9'
 
 # Logging config
 dictConfig({
@@ -72,7 +75,7 @@ def get_job(job_id: str):
     return resp
 
 
-def __get_job(job_id: str) -> object:
+def __get_job(job_id: str) -> Optional[Dict[str, Any]]:
     emr_response = emr.get(job_id)
     if emr_response is None:
         return None
@@ -110,14 +113,21 @@ def change_status_job(job_id: str):
     resp.headers['Content-Type'] = "application/json; charset=utf-8"
 
     # Logs some data
-    state = request.json.get("state", None)
+    json_data = request.json  # TODO: make single line
+    state = json_data.get("state", None)
     app.logger.info(f"Job id: '{job_id}' is now in '{state}' state")
+    app.logger.info(f'json_data: {json_data}')  # TODO: remove
 
     # Temporal sleep to prevent retrieving an old state as EMR takes some time to update the state and inform
     # this service very quickly
+    start = time.time()  # TODO: remove
+    app.logger.info(f'Time before sleep: {start}')  # TODO: remove
     sleep(SLEEP_TIME)
+    app.logger.info(f'Time after sleep: {time.time()} (elapsed: {time.time() - start} seconds)')  # TODO: remove
 
     body = __get_job(job_id)
+
+    app.logger.info(f'body: {body}')  # TODO: remove
 
     # Gets the endpoint from env var
     multiomix_endpoint = os.getenv("MULTIOMIX_URL", '')

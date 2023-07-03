@@ -7,7 +7,7 @@ from logging.config import dictConfig
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.7'
+VERSION = '0.1.8'
 
 # Logging config
 dictConfig({
@@ -25,6 +25,9 @@ dictConfig({
         'handlers': ['wsgi']
     }
 })
+
+# Temporal patch to prevent issues with the EMR API sending old states to Multiomix
+SLEEP_TIME: int = int(os.environ.get('SLEEP_TIME', 15))
 
 app = Flask(__name__)
 
@@ -112,7 +115,7 @@ def change_status_job(job_id: str):
 
     # Temporal sleep to prevent retrieving an old state as EMR takes some time to update the state and inform
     # this service very quickly
-    sleep(5)
+    sleep(SLEEP_TIME)
 
     body = __get_job(job_id)
 

@@ -1,4 +1,5 @@
-FROM python:3.10
+FROM python:3.11-alpine
+
 ENV EMR_VIRTUAL_CLUSTER_ID "virtual-cluster-id"
 ENV EMR_RELEASE_LABEL "emr-6.9.0-latest"
 ENV EMR_EXECUTION_ROLE_ARN "arn-role"

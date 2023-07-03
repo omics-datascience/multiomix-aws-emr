@@ -2,10 +2,28 @@ import os
 import emr
 import requests
 import validations
+from logging.config import dictConfig
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.4'
+VERSION = '0.1.6'
+
+# Logging config
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
 app = Flask(__name__)
 
@@ -107,6 +125,9 @@ def change_status_job(job_id: str):
         app.logger.error(err)
     except requests.exceptions.ConnectionError as err:
         app.logger.error(f'Connection error for "{multiomix_url}":')
+        app.logger.error(err)
+    except Exception as err:
+        app.logger.error(f'General error for "{multiomix_url}":')
         app.logger.error(err)
 
     return resp

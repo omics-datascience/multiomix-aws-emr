@@ -43,4 +43,4 @@ EXPOSE 8000
 
 # Runs Gunicorn
 # NOTE: timeout is set to more than 2 minutes which is the timeout that other services have
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "app:app", "--timeout", "160"]
+ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "app:app", "--timeout", "30"]

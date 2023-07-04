@@ -80,7 +80,7 @@ spec:
           - key: "default.conf"
             path: "default.conf"    
       containers:
-      - image: omicsdatascience/multiomix-aws-emr:0.1.1
+      - image: omicsdatascience/multiomix-aws-emr:0.1.10
         name: multiomix-aws-emr
         command: ["gunicorn"]
         args: ["--bind", "localhost:8000", "app:app", "--timeout", "30"]

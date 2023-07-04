@@ -1,16 +1,15 @@
 import os
-import time  # TODO: remove
-
 import emr
 import requests
 import validations
 from time import sleep
+from multiprocessing import Process
 from logging.config import dictConfig
 from typing import Dict, Any, Optional
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.9'
+VERSION = '0.1.10'
 
 # Logging config
 dictConfig({
@@ -30,7 +29,7 @@ dictConfig({
 })
 
 # Temporal patch to prevent issues with the EMR API sending old states to Multiomix
-SLEEP_TIME: int = int(os.environ.get('SLEEP_TIME', 15))
+SLEEP_TIME: int = int(os.environ.get('SLEEP_TIME', 3))
 
 app = Flask(__name__)
 
@@ -106,28 +105,13 @@ def cancel_job(job_id: str):
     return resp
 
 
-@app.patch("/job/<job_id>")
-def change_status_job(job_id: str):
-    resp = make_response({"id": job_id}, 204)
-    resp.headers['Location'] = url_for('get_job', job_id=job_id)
-    resp.headers['Content-Type'] = "application/json; charset=utf-8"
-
-    # Logs some data
-    json_data = request.json  # TODO: make single line
-    state = json_data.get("state", None)
-    app.logger.info(f"Job id: '{job_id}' is now in '{state}' state")
-    app.logger.info(f'json_data: {json_data}')  # TODO: remove
-
+def __wait_and_send_status(job_id: str):
+    """Waits some time and send request to Multiomix to change a job status."""
     # Temporal sleep to prevent retrieving an old state as EMR takes some time to update the state and inform
     # this service very quickly
-    start = time.time()  # TODO: remove
-    app.logger.info(f'Time before sleep: {start}')  # TODO: remove
     sleep(SLEEP_TIME)
-    app.logger.info(f'Time after sleep: {time.time()} (elapsed: {time.time() - start} seconds)')  # TODO: remove
 
     body = __get_job(job_id)
-
-    app.logger.info(f'body: {body}')  # TODO: remove
 
     # Gets the endpoint from env var
     multiomix_endpoint = os.getenv("MULTIOMIX_URL", '')
@@ -137,16 +121,33 @@ def change_status_job(job_id: str):
     # Sends the request to Multiomix
     timeout = 100  # Almost 2 minutes (there's a timeout of 2 minutes in NGINX proxy)
     try:
-        requests.post(multiomix_url, json=body, timeout=timeout)
+        response = requests.post(multiomix_url, json=body, timeout=timeout)
+        response.raise_for_status()
     except requests.exceptions.Timeout as err:
         app.logger.error(f'Timeout error for "{multiomix_url}":')
         app.logger.error(err)
     except requests.exceptions.ConnectionError as err:
         app.logger.error(f'Connection error for "{multiomix_url}":')
         app.logger.error(err)
-    except Exception as err:
+    except requests.exceptions.HTTPError as err:
         app.logger.error(f'General error for "{multiomix_url}":')
         app.logger.error(err)
+
+
+@app.patch("/job/<job_id>")
+def change_status_job(job_id: str):
+    resp = make_response({"id": job_id}, 204)
+    resp.headers['Location'] = url_for('get_job', job_id=job_id)
+    resp.headers['Content-Type'] = "application/json; charset=utf-8"
+
+    # Logs some data
+    state = request.json.get("state", None)
+    app.logger.info(f"Job id: '{job_id}' is now in '{state}' state")
+
+    # Makes a Thread to send the request and return the response asynchronously. This allows the EMR Spark driver
+    # to terminate, setting the job in COMPLETED/FAILED status. Otherwise, the EMR job will be in RUNNING state
+    # and Multiomix would receive that invalid state.
+    Process(target=__wait_and_send_status, args=(job_id,), daemon=True).start()
 
     return resp
 

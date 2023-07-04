@@ -88,20 +88,20 @@ class Parameters:
                                  "shared folder", type=str)
         parser.add_argument("--model", dest='model', choices=['svm', 'rf', 'clustering'],
                             help="Classifier to use in the metaheuristic", type=str)
-        parser.add_argument('--use-load-balancer', dest='use_load_balancer',
-                            help="If True, load balancer is used to generate Spark partitions", default=True,
-                            action='store_true')
-        parser.add_argument('--svm-is-regression', dest='svm_is_regression',
-                            help="If True, load balancer is used to generate Spark partitions", default=True,
-                            action='store_true')
+        parser.add_argument('--use-load-balancer', dest='use_load_balancer', choices=['true', 'false'],
+                            help="If 'true', load balancer is used to generate Spark partitions", default='true',
+                            type=str)
+        parser.add_argument('--svm-is-regression', dest='svm_is_regression', choices=['true', 'false'],
+                            help="If True, load balancer is used to generate Spark partitions", default='true',
+                            type=str)
         parser.add_argument("--random-state", dest='random_state', help="Random seed to replicate randomness", type=int,
                             default=None)
-        parser.add_argument('--use-broadcast', dest='use_broadcast',
-                            help="If True, it broadcast the data to all the workers node", default=True,
-                            action='store_true')
-        parser.add_argument('--debug', dest='debug',
-                            help="If True it logs all the star values in the terminal", default=False,
-                            action='store_true')
+        parser.add_argument('--use-broadcast', dest='use_broadcast', choices=['true', 'false'],
+                            help="If 'true', it broadcast the data to all the workers node", default='true',
+                            type=str)
+        parser.add_argument('--debug', dest='debug', choices=['true', 'false'],
+                            help="If 'true' it logs all the star values in the terminal", default='false',
+                            type=str)
 
         # SVM parameters
         parser.add_argument("--svm-kernel", dest='svm_kernel',
@@ -136,9 +136,9 @@ class Parameters:
                             type=int, default=-1)
         parser.add_argument("--cv-folds", dest='cv_folds', help="Number of folds in the Cross Validation", type=int,
                             default=3)  # TODO: change default to 10
-        parser.add_argument('--return-train-scores', dest='return_train_scores',
-                            help="To get the training score or not during CV", default=True,
-                            action='store_true')
+        parser.add_argument('--return-train-scores', dest='return_train_scores', choices=['true', 'false'],
+                            help="If 'true' gets the training score during CV", default='train',
+                            type=str)
 
         # BBHA parameters
         # TODO: change default to 30
@@ -155,21 +155,21 @@ class Parameters:
         self.svm_kernel = args.svm_kernel
         self.svm_optimizer = args.svm_optimizer
         self.cv_folds = args.cv_folds
-        self.return_train_scores = args.return_train_scores
+        self.return_train_scores = args.return_train_scores == 'true'
         self.n_stars = args.n_stars
         self.random_state = args.random_state
-        self.use_load_balancer = False   # TODO: leave this args.use_load_balancer when implemented
+        self.use_load_balancer = False   # TODO: leave this args.use_load_balancer == 'true' when implemented
         self.molecules_dataset = args.molecules_dataset
         self.clinical_dataset = args.clinical_dataset
         self.bbha_n_iterations = args.bbha_n_iterations
         self.model = args.model
         self.rf_n_estimators = args.rf_n_estimators
-        self.svm_is_regression = args.svm_is_regression
+        self.svm_is_regression = args.svm_is_regression == 'true'
         self.svm_max_iterations = args.svm_max_iterations
         self.clustering_algorithm = args.clustering_algorithm
         self.clustering_scoring_method = args.clustering_scoring_method
         self.number_of_clusters = args.number_of_clusters
-        self.use_broadcast = args.use_broadcast
-        self.debug = args.debug
+        self.use_broadcast = args.use_broadcast == 'true'
+        self.debug = args.debug == 'true'
         self.n_jobs = args.n_jobs
         self.tree_n_jobs = args.tree_n_jobs

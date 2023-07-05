@@ -8,6 +8,7 @@ import numpy as np
 from math import tanh
 from pyspark import SparkContext
 import time
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import OrdinalEncoder, MinMaxScaler, PolynomialFeatures
 from model_parameters import SVMParameters
@@ -18,9 +19,11 @@ SVM_TRAINED_MODELS_DIR = 'Trained_models/svm/'
 
 # Result tuple with [0] -> fitness value, [1] -> execution time, [2] -> Partition ID, [3] -> Hostname,
 # [4] -> number of evaluated features, [5] -> time lapse description, [6] -> time by iteration and [7] -> avg test time
-# [8] -> mean of number of iterations of the model inside the CV, [9] -> train score. Number values are -1.0 if there
-# were some error.
-CrossValidationSparkResult = Tuple[float, float, int, str, int, str, float, float, float, float]
+# [8] -> mean of number of iterations of the model inside the CV, [9] -> train score.
+# [10] -> Best model during CV (the one with better fitness value) or None if an error occurred.
+# Number values are -1.0 if there were some error
+CrossValidationSparkResult = Tuple[float, float, int, str, int, str, float, float, float, float,
+                                   Optional[BaseEstimator]]
 
 
 def report_all_load_balancer_models(n_stars: int, parameters: SVMParameters, stars_subsets: np.ndarray):
@@ -477,7 +480,7 @@ def binary_black_hole_spark(
         random_state: Optional[int],
         binary_threshold: Optional[float] = 0.6,
         debug: bool = False,
-) -> Tuple[np.ndarray, float, np.ndarray, Dict]:
+) -> Tuple[np.ndarray, float, np.ndarray, Optional[BaseEstimator], Dict]:
     """
     Computes the metaheuristic Binary Black Hole Algorithm in a Spark cluster. Taken from the paper
     "Binary black hole algorithm for feature selection and classification on biological data"
@@ -499,6 +502,8 @@ def binary_black_hole_spark(
     :return: The best subset found, the best fitness value found, the data returned by the Worker for the Black Hole,
     and all the data collected about times and execution during the experiment.
     """
+    black_hole_model: Optional[BaseEstimator] = None
+
     # Lists for storing times and fitness data to train models
     number_of_features: List[int] = []
     hosts: List[str] = []
@@ -560,6 +565,7 @@ def binary_black_hole_spark(
     black_hole_idx, black_hole_subset, black_hole_data = get_best_spark(stars_subsets, initial_stars_results_values,
                                                                         more_is_better)
     black_hole_fitness = black_hole_data[0]
+    black_hole_model = black_hole_data[10]
 
     if debug:
         logging.info(f'Black hole starting as star at index {black_hole_idx}')
@@ -615,8 +621,9 @@ def binary_black_hole_spark(
             # and the sum of all the execution times for every star every Worker got
             if host_name not in workers_execution_times:
                 workers_execution_times[host_name] = 0.0
-            workers_execution_times[
-                host_name] += worker_execution_time  # Adds the time of the Worker to compute this star
+
+            # Adds the time of the Worker to compute this star
+            workers_execution_times[host_name] += worker_execution_time
 
             if debug:
                 logging.info(
@@ -660,6 +667,7 @@ def binary_black_hole_spark(
                 black_hole_subset, current_star_subset = current_star_subset, black_hole_subset
                 black_hole_data, current_data = current_data, black_hole_data
                 black_hole_fitness, current_fitness = current_fitness, black_hole_fitness
+                black_hole_model = black_hole_data[10]
 
             # If the fitness function was the same, but had fewer features in the star (better!), makes the swap
             elif current_fitness == black_hole_fitness and np.count_nonzero(current_star_subset) < np.count_nonzero(
@@ -672,6 +680,7 @@ def binary_black_hole_spark(
                 black_hole_subset, current_star_subset = current_star_subset, black_hole_subset
                 black_hole_data, current_data = current_data, black_hole_data
                 black_hole_fitness, current_fitness = current_fitness, black_hole_fitness
+                black_hole_model = black_hole_data[10]
 
             # Computes the event horizon
             event_horizon = black_hole_fitness / np.sum(current_fitness)
@@ -724,4 +733,4 @@ def binary_black_hole_spark(
         'partition_ids': partition_ids
     }
 
-    return black_hole_subset, black_hole_fitness, black_hole_data, result_dict
+    return black_hole_subset, black_hole_fitness, black_hole_data, black_hole_model, result_dict

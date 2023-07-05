@@ -1,4 +1,5 @@
 import json
+import pickle
 import re
 from typing import Optional, Callable, Union, Tuple, Any
 from metaheuristics import improved_binary_black_hole, binary_black_hole_spark, CrossValidationSparkResult
@@ -62,7 +63,7 @@ def fitness_function_with_checking(
     :return: All the results, documentation listed in the CrossValidationSparkResult type
     """
     if not np.count_nonzero(index_array):
-        return -1.0, -1.0, -1, '', -1, '', -1.0, -1.0, -1.0, -1.0
+        return -1.0, -1.0, -1, '', -1, '', -1.0, -1.0, -1.0, -1.0, None
 
     return compute_cross_validation(x, index_array, y, is_broadcast)
 
@@ -172,6 +173,8 @@ def run_bbha_experiment(
     improved_mode_str = 'improved' if run_improved_bbha else 'normal'
     logging.info(f'Running {improved_mode_str} algorithm')
 
+    best_model = None
+
     # Binary Black Hole
     bh_start = time.time()
     if run_improved_bbha:
@@ -199,7 +202,7 @@ def run_bbha_experiment(
         else:
             parameters = None
 
-        best_subset, best_metric, _best_data, json_experiment_data = binary_black_hole_spark(
+        best_subset, best_metric, _best_data, best_model, json_experiment_data = binary_black_hole_spark(
             n_stars=n_stars,
             n_features=number_features,
             n_iterations=n_iterations,
@@ -247,7 +250,13 @@ def run_bbha_experiment(
     with open(json_dest, 'w+') as file:
         file.write(json.dumps(json_experiment_data))
 
-    # Some extra reporting
+    # If the best_model was found, saves it in the shared folder
+    if best_model is not None:
+        model_dest = os.path.join(app_folder, 'model.pkl')
+        with open(model_dest, 'wb+') as model_file:
+            pickle.dump(best_model, model_file)
+
+    # Adds some extra reporting to final result
     algorithm = 'BBHA' + (' (improved)' if run_improved_bbha else '')
     logging.info(f'Found {len(final_subset)} features with {algorithm} ({metric_description} '
                  f'= {best_metric}):')
@@ -263,7 +272,7 @@ def run_bbha_experiment(
         'execution_time': total_fs_execution_time
     }
 
-    # Saves new data to final JSON
+    # Saves the results to final JSON
     with open(res_json_file_path, 'w+') as file:
         file.write(json.dumps(experiment_results_dict))
 

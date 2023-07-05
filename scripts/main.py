@@ -1,6 +1,7 @@
-from typing import Tuple, Union, List
+from typing import Tuple, Union, List, cast, Optional
 from lifelines import CoxPHFitter
 from pyspark import TaskContext, Broadcast
+from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans, SpectralClustering
 from core import run_bbha_experiment
 from parameters import Parameters
@@ -95,9 +96,11 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
                 # Duplicated to not consider consumed time by all the metrics below
                 worker_execution_time = end_time - start
 
-                metric_description = 'Log Likelihood (higher is better)'
+                metric_description = 'C-Index (higher is better)' if scoring_method == 'concordance_index' \
+                    else 'Log-Likelihood (lower is better)'
                 mean_test_time = 0.0
                 mean_train_score = 0.0
+                best_model = clustering_model
             else:
                 logging.info(f'Computing CV ({params.cv_folds} folds) with {params.model} model')
                 start = time.time()
@@ -115,9 +118,12 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
                 # Duplicated to not consider consumed time by all the metrics below
                 worker_execution_time = end_time - start
 
-                metric_description = 'Concordance Index (higher is better)'
+                metric_description = 'C-Index (higher is better)'
                 mean_test_time = np.mean(cv_res['score_time'])
                 mean_train_score = cv_res['train_score'].mean() if params.return_train_scores else 0.0
+
+                # Gets best model (the one in the position of best fitness)
+                best_model = cv_res['estimator'][np.argmax(cv_res['test_score'])]
 
             logging.info(f'Fitness function with {n_features} features: {worker_execution_time} seconds | '
                          f'{metric_description}: {fitness_value}')
@@ -129,7 +135,7 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
             end_desc = datetime.fromtimestamp(end_time).strftime("%H:%M:%S")
             time_description = f'{start_desc} - {end_desc}'
 
-            # 'res' is only defined when using SVM or RF
+            # NOTE: 'cv_res' is only defined when using SVM or RF
 
             # Gets number of iterations (only for SVM)
             if params.model == 'svm':
@@ -159,7 +165,8 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
                 mean_times_by_iteration,
                 mean_test_time,
                 mean_total_number_of_iterations,
-                mean_train_score
+                mean_train_score,
+                best_model
             ])
     except Exception as ex:
         logging.error('An exception has occurred in the fitness function:')
@@ -176,7 +183,8 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
             -1.0,  # Mean times_by_iteration,
             -1.0,  # Mean test_time,
             -1.0,  # Mean total_number_of_iterations,
-            -1.0  # Mean train_score
+            -1.0,  # Mean train_score
+            None  # Best model
         ])
 
 
@@ -185,7 +193,7 @@ def compute_cross_validation_spark(
         index_array: np.ndarray,
         y: np.ndarray,
         is_broadcast: bool
-) -> Tuple[float, float, int, str, int, str, float, float, float, float]:
+) -> Tuple[float, float, int, str, int, str, float, float, float, float, Optional[BaseEstimator]]:
     """
     Calls fitness inside a Process to prevent issues with memory leaks in Python.
     More info: https://stackoverflow.com/a/71700592/7058363
@@ -195,7 +203,7 @@ def compute_cross_validation_spark(
     :param y: Y data
     :return: Result tuple with [0] -> fitness value, [1] -> execution time, [2] -> Partition ID, [3] -> Hostname,
     [4] -> number of evaluated features, [5] -> time lapse description, [6] -> time by iteration, [7] -> avg test time
-    [8] -> mean of number of iterations of the model inside the CV, [9] -> train score
+    [8] -> mean of number of iterations of the model inside the CV, [9] -> train score, [10] -> Best model
     """
     # If broadcasting is enabled, the retrieves the Broadcast instance value
     x_values = subset.value if is_broadcast else subset
@@ -237,11 +245,21 @@ def main():
 
     run_improved_bbha = False  # TODO: improved BBHA it's not implemented for Spark right now
 
+    # In case of Log-likelihood (only used in clustering). If it is lower, better!
+    more_is_better = params.model != 'clustering' or params.clustering_scoring_method == 'concordance_index'
+
+    # SVM/RF uses C-Index, in clustering user can select C-Index or Log-Likelihood
+    metric_description = 'concordance index' if params.model != 'clustering' else params.clustering_scoring_method,
+    metric_description = cast(str, metric_description)
+
+    # TODO: implement load balancer for the RF and Cox Regression
+    use_load_balancer = params.use_load_balancer and params.model == 'svm'
+
     # Runs normal Feature Selection experiment using BBHA
     run_bbha_experiment(
         app_name=params.app_name,
-        use_load_balancer=params.use_load_balancer and params.model == 'svm',  # TODO: implement for the RF and Cox Regression
-        more_is_better=True,  # params.model != 'clustering',  # CoxRegression is evaluated by the log likelihood. If it is lower, better! TODO: parametrize the clustering metric
+        use_load_balancer=use_load_balancer,
+        more_is_better=more_is_better,
         svm_kernel=svm_kernel,
         svm_optimizer=params.svm_optimizer,
         run_improved_bbha=run_improved_bbha,
@@ -249,7 +267,7 @@ def main():
         random_state=params.random_state,
         compute_cross_validation=fitness_function,
         sc=sc,
-        metric_description='concordance index' if params.model != 'clustering' else 'log_likelihood',  # TODO: check this, log_likelihood is not always used
+        metric_description=metric_description,
         debug=params.debug,
         molecules_dataset=params.molecules_dataset,
         clinical_dataset=params.clinical_dataset,

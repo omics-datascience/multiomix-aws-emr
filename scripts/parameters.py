@@ -100,7 +100,7 @@ class Parameters:
                             help="If 'true', it broadcast the data to all the workers node", default='true',
                             type=str)
         parser.add_argument('--debug', dest='debug', choices=['true', 'false'],
-                            help="If 'true' it logs all the star values in the terminal", default='false',
+                            help="If 'true' it logs all the job process", default='false',
                             type=str)
 
         # SVM parameters

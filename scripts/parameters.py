@@ -128,24 +128,22 @@ class Parameters:
         parser.add_argument("--number-of-clusters", dest='number_of_clusters',
                             help="Number of clusters to group by molecule expressions during clustering algorithm",
                             type=int, default=2)
-        # TODO: implement 'metric', 'scoring method' and 'penalizer' paramters for C-Index or Log likelihood
+        # TODO: implement 'metric' and 'penalizer' parameters for C-Index or Log likelihood
 
         # CV parameters
         parser.add_argument("--n-jobs", dest='n_jobs',
                             help="Number of cores used by the worker to compute the Cross Validation. -1 = use all",
                             type=int, default=-1)
         parser.add_argument("--cv-folds", dest='cv_folds', help="Number of folds in the Cross Validation", type=int,
-                            default=3)  # TODO: change default to 10
+                            default=10)
         parser.add_argument('--return-train-scores', dest='return_train_scores', choices=['true', 'false'],
                             help="If 'true' gets the training score during CV", default='train',
                             type=str)
 
         # BBHA parameters
-        # TODO: change default to 30
         parser.add_argument("--bbha-iterations", dest='bbha_n_iterations',
-                            help="Number of iterations for the BBHA algorithm", type=int, default=1)
-        # TODO: change default to 30
-        parser.add_argument("--n-stars", dest='n_stars', help="Number of stars in the BBHA", type=int, default=3)
+                            help="Number of iterations for the BBHA algorithm", type=int, default=30)
+        parser.add_argument("--n-stars", dest='n_stars', help="Number of stars in the BBHA", type=int, default=30)
 
         args = parser.parse_args()
 

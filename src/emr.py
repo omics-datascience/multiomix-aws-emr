@@ -8,6 +8,8 @@ from enum import Enum
 
 
 class Algorithms(Enum):
+    """Available algorithms to be used in the EMR job."""
+    # TODO: implement Blind Search and add others
     BLIND_SEARCH = 0
     BBHA = 1
 
@@ -15,11 +17,11 @@ class Algorithms(Enum):
 def schedule(job_name: str, algorithm: Algorithms,
              entrypoint_arguments: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     """
-    TODO: document
-    :param job_name:
-    :param algorithm:
-    :param entrypoint_arguments:
-    :return:
+    Sends a Job to EMR Containers to be scheduled.
+    :param job_name: Name of the job
+    :param algorithm: Algorithm to be used (Blind Search, BBHA, PSO, etc).
+    :param entrypoint_arguments: Arguments to be passed to the entrypoint script.
+    :return: Response from EMR Containers API.
     """
     args = _get_args(job_name, algorithm, entrypoint_arguments)
 
@@ -108,8 +110,8 @@ def get_spark_submit_params_str(args) -> str:
                           "executor_cores} --conf spark.executor.memory={executor_memory} --conf spark.driver.cores={" \
                           "driver_cores} " + \
                           "--conf spark.driver.memory={driver_memory} --conf spark.executor.instances={" \
-                          "executor_instances} --conf spark.executor.heartbeatInterval=60s " + \
-                          "--conf spark.network.timeout=240s " \
+                          "executor_instances} --conf spark.executor.heartbeatInterval=600s " + \
+                          "--conf spark.network.timeout=2400s " \
                           "--conf spark.kubernetes.driverEnv.DATASETS_PATH={datasets_path} --conf " \
                           "spark.kubernetes.driverEnv.RESULTS_PATH={results_path} --conf " \
                           "spark.kubernetes.driverEnv.JOB_NAME={name}"

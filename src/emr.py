@@ -28,9 +28,6 @@ def schedule(job_name: str, algorithm: Algorithms,
     client = boto3.client('emr-containers')
     response = None
 
-    print(f'Params: {get_spark_submit_params_str(args)}')  # TODO: remove
-    logging.warning(f'Params: {get_spark_submit_params_str(args)}')  # TODO: remove
-
     try:
         response = client.start_job_run(
             name=job_name,
@@ -114,8 +111,9 @@ def get_spark_submit_params_str(args: Dict[str, Any]) -> str:
                           "executor_cores} --conf spark.executor.memory={executor_memory} --conf spark.driver.cores={" \
                           "driver_cores} " + \
                           "--conf spark.driver.memory={driver_memory} --conf spark.executor.instances={" \
-                          "executor_instances} --conf spark.executor.heartbeatInterval=600s " + \
-                          "--conf spark.network.timeout=2400s " \
+                          "executor_instances} " \
+                          "--conf spark.executor.heartbeatInterval={executor_heartbeat_interval} " + \
+                          "--conf spark.network.timeout={network_timeout} " \
                           "--conf spark.kubernetes.driverEnv.DATASETS_PATH={datasets_path} --conf " \
                           "spark.kubernetes.driverEnv.RESULTS_PATH={results_path} --conf " \
                           "spark.kubernetes.driverEnv.JOB_NAME={name}"
@@ -127,6 +125,8 @@ def get_spark_submit_params_str(args: Dict[str, Any]) -> str:
         image=args['image'],
         executor_cores=args['executor_cores'],
         executor_memory=args['executor_memory'],
+        executor_heartbeat_interval=args['executor_heartbeat_interval'],
+        network_timeout=args['network_timeout'],
         driver_cores=args['driver_cores'],
         driver_memory=args['driver_memory'],
         executor_instances=args['executor_instances'],
@@ -174,6 +174,8 @@ def _get_args(name: str, algorithm: Algorithms, entrypoint_args=None) -> Dict[st
         "executor_template": os.getenv('EMR_EXECUTOR_TEMPLATE'),
         "executor_cores": os.getenv('EMR_EXECUTOR_CORES'),
         "executor_memory": os.getenv('EMR_EXECUTOR_MEMORY'),
+        "executor_heartbeat_interval": os.getenv('EMR_EXECUTOR_HEARTBEAT_INTERVAL'),
+        "network_timeout": os.getenv('EMR_NETWORK_TIMEOUT'),
         "executor_instances": os.getenv('EMR_EXECUTOR_INSTANCES'),
         "execution_role": os.getenv('EMR_EXECUTION_ROLE_ARN'),
         "image": os.getenv('EMR_IMAGE'),

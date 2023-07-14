@@ -108,7 +108,8 @@ def get_spark_submit_params_str(args) -> str:
                           "executor_cores} --conf spark.executor.memory={executor_memory} --conf spark.driver.cores={" \
                           "driver_cores} " + \
                           "--conf spark.driver.memory={driver_memory} --conf spark.executor.instances={" \
-                          "executor_instances} " + \
+                          "executor_instances} --conf spark.executor.heartbeatInterval=100s " + \
+                          "--conf spark.network.timeout=1200s " \
                           "--conf spark.kubernetes.driverEnv.DATASETS_PATH={datasets_path} --conf " \
                           "spark.kubernetes.driverEnv.RESULTS_PATH={results_path} --conf " \
                           "spark.kubernetes.driverEnv.JOB_NAME={name}"

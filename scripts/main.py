@@ -249,7 +249,7 @@ def main():
     more_is_better = params.model != 'clustering' or params.clustering_scoring_method == 'concordance_index'
 
     # SVM/RF uses C-Index, in clustering user can select C-Index or Log-Likelihood
-    metric_description = 'concordance index' if params.model != 'clustering' else params.clustering_scoring_method,
+    metric_description = 'concordance index' if params.model != 'clustering' else params.clustering_scoring_method
     metric_description = cast(str, metric_description)
 
     # TODO: implement load balancer for the RF and Cox Regression

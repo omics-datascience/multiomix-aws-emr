@@ -28,6 +28,9 @@ def schedule(job_name: str, algorithm: Algorithms,
     client = boto3.client('emr-containers')
     response = None
 
+    print(f'Params: {get_spark_submit_params_str(args)}')  # TODO: remove
+    logging.warning(f'Params: {get_spark_submit_params_str(args)}')  # TODO: remove
+
     try:
         response = client.start_job_run(
             name=job_name,
@@ -102,7 +105,8 @@ def cancel(job_id: str):
     return response
 
 
-def get_spark_submit_params_str(args) -> str:
+def get_spark_submit_params_str(args: Dict[str, Any]) -> str:
+    """Gets the spark-submit parameters string."""
     spark_submit_params = "--py-files s3://{bucket}/py-files/{py_files} --conf " \
                           "spark.kubernetes.driver.podTemplateFile=s3://{bucket}/templates/{driver_template} --conf " \
                           "spark.kubernetes.executor.podTemplateFile=s3://{bucket}/templates/{executor_template} " + \

@@ -182,7 +182,7 @@ def get_best_spark(
     # Converts to a Numpy array to discard the star's index
     workers_results_np = np.array(workers_results, dtype=object)
     workers_results_np_aux = np.array(
-        [np.array(a_list) for a_list in workers_results_np[:, 1]])  # Creates Numpy arrays from lists
+        [np.array(a_list, dtype=object) for a_list in workers_results_np[:, 1]], dtype=object)  # Creates Numpy arrays from lists
     if more_is_better:
         best_idx = np.argmax(workers_results_np_aux[:, 0])
     else:

@@ -3,7 +3,7 @@ from lifelines import CoxPHFitter
 from pyspark import TaskContext, Broadcast
 from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans, SpectralClustering
-from core import run_bbha_experiment
+from core import run_bbha_experiment, NEG_INF, POS_INF
 from parameters import Parameters
 from utils import get_columns_from_df
 import pandas as pd
@@ -52,6 +52,10 @@ def get_clustering_model() -> Union[KMeans, SpectralClustering]:
     raise Exception('Invalid params.clustering_algorithm parameter')
 
 
+# In case of Log-likelihood (only used in clustering). If it is lower, better!
+more_is_better = params.model != 'clustering' or params.clustering_scoring_method == 'concordance_index'
+
+
 def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Queue):
     """
     Computes a cross validations to get the concordance index in a Spark environment
@@ -59,6 +63,9 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
     :param y: Y data
     :param q: Queue to return Process result
     """
+    # Sets the default score (in case of error) to the worst case in both scenarios: C-Index and Log-likelihood
+    error_score = NEG_INF if more_is_better else POS_INF
+
     try:
         n_features = subset.shape[1]
 
@@ -174,7 +181,7 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
 
         # Returns empty values
         q.put([
-            -1.0,  # Fitness value,
+            error_score,  # Fitness value,
             -1.0,  # Worker time,
             -1.0,  # Partition ID,
             '',  # Host name,
@@ -183,7 +190,7 @@ def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Que
             -1.0,  # Mean times_by_iteration,
             -1.0,  # Mean test_time,
             -1.0,  # Mean total_number_of_iterations,
-            -1.0,  # Mean train_score
+            error_score,  # Mean train_score
             None  # Best model
         ])
 
@@ -244,9 +251,6 @@ def main():
     fitness_function = compute_cross_validation_spark
 
     run_improved_bbha = False  # TODO: improved BBHA it's not implemented for Spark right now
-
-    # In case of Log-likelihood (only used in clustering). If it is lower, better!
-    more_is_better = params.model != 'clustering' or params.clustering_scoring_method == 'concordance_index'
 
     # SVM/RF uses C-Index, in clustering user can select C-Index or Log-Likelihood
     metric_description = 'concordance index' if params.model != 'clustering' else params.clustering_scoring_method

@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional, Callable, Tuple, Union, List, Iterable, Dict, cast
+from typing import Optional, Callable, Tuple, List, Iterable, Dict, cast
 import random
 import binpacking
 import joblib
@@ -21,7 +21,7 @@ SVM_TRAINED_MODELS_DIR = 'Trained_models/svm/'
 # [4] -> number of evaluated features, [5] -> time lapse description, [6] -> time by iteration and [7] -> avg test time
 # [8] -> mean of number of iterations of the model inside the CV, [9] -> train score.
 # [10] -> Best model during CV (the one with better fitness value) or None if an error occurred.
-# Number values are -1.0 if there were some error
+# Number values are -1 if there were some error (NEG_INF/POS_INF for fitness value)
 CrossValidationSparkResult = Tuple[float, float, int, str, int, str, float, float, float, float,
                                    Optional[BaseEstimator]]
 
@@ -166,7 +166,7 @@ def generate_stars_and_partitions_bins(bins: List) -> Dict[int, int]:
     return stars_and_partitions
 
 
-def get_best_spark(
+def __get_best_spark(
         subsets: np.ndarray,
         workers_results: List[Tuple[int, CrossValidationSparkResult]],
         more_is_better: bool
@@ -175,7 +175,7 @@ def get_best_spark(
     Gets the best idx, feature subset and fitness value obtained during one iteration of the metaheuristic
     :param subsets: List of features lists used in every star
     :param workers_results: List of fitness values obtained for every star
-    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise (LogRank p-value)
+    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise (useful for clustering Log Likelihood)
     :return: Best idx of the stars (Black Hole idx), subset of features for the Black Hole, and all the data returned
     by the star that computes the best fitness (from now, Black Hole)
     """
@@ -327,15 +327,6 @@ def get_random_subset_of_features(n_features: int, random_state: Optional[int] =
     return res
 
 
-def get_best(
-        subsets: np.ndarray,
-        fitness_values: Union[np.ndarray, List[float]]
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Get the best value of the fitness values."""
-    best_idx = np.argmax(fitness_values)  # Keeps the idx to avoid ambiguous comparisons
-    return best_idx, subsets[best_idx], fitness_values[best_idx]
-
-
 def improved_binary_black_hole(
         n_stars: int,
         n_features: int,
@@ -343,10 +334,12 @@ def improved_binary_black_hole(
         fitness_function: Callable[[np.ndarray], CrossValidationSparkResult],
         coeff_1: float,
         coeff_2: float,
+        more_is_better: bool,
         binary_threshold: Optional[float] = 0.6,
         debug: bool = False
 ):
     """
+    TODO: convert to Spark
     Computes the BBHA algorithm with some modification extracted from
     "Improved black hole and multiverse algorithms for discrete sizing optimization of planar structures"
     Authors: Saeed Gholizadeh, Navid Razavi & Emad Shojaei
@@ -356,6 +349,8 @@ def improved_binary_black_hole(
     :param fitness_function: Fitness function to compute on every star
     :param coeff_1: Parameter taken from the paper. Possible values = [2.2, 2.35]
     :param coeff_2: Parameter taken from the paper. Possible values = [0.1, 0.2, 0.3]
+    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise
+    (useful for clustering Log Likelihood).
     :param binary_threshold: Binary threshold to set 1 or 0 the feature. If None it'll be computed randomly
     :param debug: If True logs everything is happening inside BBHA
     :return:
@@ -388,7 +383,8 @@ def improved_binary_black_hole(
         stars_best_subset[i] = stars_subsets[i]
 
     # The star with the best fitness is the Black Hole
-    black_hole_idx, black_hole_subset, black_hole_fitness = get_best(stars_subsets, stars_fitness_values)
+    black_hole_idx, black_hole_subset, black_hole_fitness = __get_best_spark(stars_subsets, stars_fitness_values,
+                                                                             more_is_better)
     if debug:
         logging.info(f'Black hole starting as star at index {black_hole_idx}')
 
@@ -406,11 +402,13 @@ def improved_binary_black_hole(
             current_fitness = fitness_function(current_star_subset)
 
             # Sets the best fitness and position
+            # TODO: use more_is_better variable
             if current_fitness > stars_best_fitness_values[a]:
                 stars_best_fitness_values[a] = current_fitness
                 stars_best_subset[a] = current_star_subset
 
             # If it's the best fitness, swaps that star with the current black hole
+            # TODO: use more_is_better variable
             if current_fitness > black_hole_fitness:
                 if debug:
                     logging.info(f'Changing Black hole for star {a},'
@@ -494,7 +492,7 @@ def binary_black_hole_spark(
     :param number_of_workers: Number of workers in the Spark cluster.
     :param parameters: Parameters of the RF/SVM for the load balancer. Only used if 'use_load_balancer' = True.
     :param more_is_better: If True, it returns the highest value (SVM and RF C-Index), lowest otherwise
-    (LogRank p-value).
+    (useful for clustering Log Likelihood).
     :param random_state: Random state to replicate experiments. It allows to set the same number of features for every
     star and the same shuffling.
     :param binary_threshold: Binary threshold to set 1 or 0 the feature. If None it'll be computed randomly.
@@ -562,7 +560,7 @@ def binary_black_hole_spark(
         predicted_time_exec.append(round(current_predicted_time, 4))
 
     # The star with the best fitness is the black hole
-    black_hole_idx, black_hole_subset, black_hole_data = get_best_spark(stars_subsets, initial_stars_results_values,
+    black_hole_idx, black_hole_subset, black_hole_data = __get_best_spark(stars_subsets, initial_stars_results_values,
                                                                         more_is_better)
     black_hole_fitness = black_hole_data[0]
     black_hole_model = black_hole_data[10]

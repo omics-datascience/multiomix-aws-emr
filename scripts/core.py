@@ -13,6 +13,10 @@ from utils import get_columns_from_df, read_survival_data, KernelName, ModelName
 import time
 import logging
 
+# Negative and positive infinity constants
+NEG_INF: float = float("-inf")
+POS_INF: float = float("inf")
+
 logging.getLogger().setLevel(logging.INFO)
 
 # Prevents 'A value is trying to be set on a copy of a slice from a DataFrame.' error
@@ -45,25 +49,30 @@ def create_folder_with_permissions(dir_path: str):
     os.chmod(dir_path, mode)  # Mode in mkdir is sometimes ignored: https://stackoverflow.com/a/5231994/7058363
 
 
-def fitness_function_with_checking(
+def __fitness_function_with_checking(
         compute_cross_validation: CrossValidationCallback,
         index_array: np.ndarray,
         x: Union[pd.DataFrame, Broadcast],
         y: np.ndarray,
-        is_broadcast: bool
+        is_broadcast: bool,
+        more_is_better: bool,
 ) -> CrossValidationSparkResult:
     """
     Fitness function of a star evaluated in the Binary Black hole, including vector without features check.
 
-    :param compute_cross_validation: Fitness function
-    :param index_array: Boolean vector to indicate which feature will be present in the fitness function
-    :param x: Data with features
-    :param y: Classes
-    :param is_broadcast: True if x is a Spark Broadcast to retrieve its values
+    :param compute_cross_validation: Fitness function.
+    :param index_array: Boolean vector to indicate which feature will be present in the fitness function.
+    :param x: Data with features.
+    :param y: Classes.
+    :param is_broadcast: True if x is a Spark Broadcast to retrieve its values.
+    :param more_is_better: If True, it returns the highest value (SVM and RF C-Index),
+    lowest otherwise (useful for clustering Log Likelihood).
     :return: All the results, documentation listed in the CrossValidationSparkResult type
     """
     if not np.count_nonzero(index_array):
-        return -1.0, -1.0, -1, '', -1, '', -1.0, -1.0, -1.0, -1.0, None
+        # If no features, returns the worst fitness value
+        worst_fitness_value = NEG_INF if more_is_better else POS_INF
+        return worst_fitness_value, -1.0, -1, '', -1, '', -1.0, -1.0, -1.0, -1.0, None
 
     return compute_cross_validation(x, index_array, y, is_broadcast)
 
@@ -106,7 +115,7 @@ def run_bbha_experiment(
     :param number_of_workers: Number of workers nodes in the Spark cluster.
     :param use_load_balancer: If True, assigns a partition ID using a load balancer. If False, distributes sequentially.
     :param more_is_better: If True, it returns the highest value (SVM and RF C-Index),
-    lowest otherwise (LogRank p-value).
+    lowest otherwise (useful for clustering Log Likelihood).
     :param svm_kernel: SVM 'kernel' parameter to fill SVMParameter instance. Only used if model used is the SVM.
     :param svm_optimizer: SVM 'optimizer' parameter to fill SVMParameter instance. Only used if model used is the SVM.
     :param run_improved_bbha: True for improved, False to run the original.
@@ -183,15 +192,17 @@ def run_bbha_experiment(
             n_stars=n_stars,
             n_features=number_features,
             n_iterations=n_iterations,
-            fitness_function=lambda subset: fitness_function_with_checking(
+            fitness_function=lambda subset: __fitness_function_with_checking(
                 compute_cross_validation,
                 subset,
                 x,
                 y,
-                is_broadcast=use_broadcasts_in_spark
+                is_broadcast=use_broadcasts_in_spark,
+                more_is_better=more_is_better
             ),
             coeff_1=coeff_1,
             coeff_2=coeff_2,
+            more_is_better=more_is_better,
             binary_threshold=binary_threshold,
             debug=debug
         )
@@ -206,12 +217,13 @@ def run_bbha_experiment(
             n_stars=n_stars,
             n_features=number_features,
             n_iterations=n_iterations,
-            fitness_function=lambda subset: fitness_function_with_checking(
+            fitness_function=lambda subset: __fitness_function_with_checking(
                 compute_cross_validation,
                 subset,
                 x,
                 y,
-                is_broadcast=use_broadcasts_in_spark
+                is_broadcast=use_broadcasts_in_spark,
+                more_is_better=more_is_better
             ),
             sc=sc,
             binary_threshold=binary_threshold,

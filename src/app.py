@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.14'
+VERSION = '0.1.15'
 
 # Logging config
 dictConfig({

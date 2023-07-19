@@ -109,7 +109,7 @@ def get_spark_submit_params_str(args: Dict[str, Any]) -> str:
                           "spark.kubernetes.executor.podTemplateFile=s3://{bucket}/templates/{executor_template} " + \
                           "--conf spark.kubernetes.container.image={image} --conf spark.executor.cores={" \
                           "executor_cores} --conf spark.executor.memory={executor_memory} --conf spark.driver.cores={" \
-                          "driver_cores} " + \
+                          "driver_cores} --conf spark.driver.maxResultSize={driver_max_result_size} " + \
                           "--conf spark.driver.memory={driver_memory} --conf spark.executor.instances={" \
                           "executor_instances} " \
                           "--conf spark.executor.heartbeatInterval={executor_heartbeat_interval} " + \
@@ -125,6 +125,7 @@ def get_spark_submit_params_str(args: Dict[str, Any]) -> str:
         image=args['image'],
         executor_cores=args['executor_cores'],
         executor_memory=args['executor_memory'],
+        driver_max_result_size=args['driver_max_result_size'],
         executor_heartbeat_interval=args['executor_heartbeat_interval'],
         network_timeout=args['network_timeout'],
         driver_cores=args['driver_cores'],
@@ -174,6 +175,7 @@ def _get_args(name: str, algorithm: Algorithms, entrypoint_args=None) -> Dict[st
         "executor_template": os.getenv('EMR_EXECUTOR_TEMPLATE'),
         "executor_cores": os.getenv('EMR_EXECUTOR_CORES'),
         "executor_memory": os.getenv('EMR_EXECUTOR_MEMORY'),
+        "driver_max_result_size": os.getenv('EMR_DRIVER_MAX_RESULT_SIZE'),
         "executor_heartbeat_interval": os.getenv('EMR_EXECUTOR_HEARTBEAT_INTERVAL'),
         "network_timeout": os.getenv('EMR_NETWORK_TIMEOUT'),
         "executor_instances": os.getenv('EMR_EXECUTOR_INSTANCES'),

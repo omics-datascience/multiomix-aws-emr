@@ -34,7 +34,7 @@ class Parameters:
     return_train_scores: bool
 
     # Number of stars in the BBHA
-    n_stars: int = 3
+    n_stars: int
 
     # To replicate randomness
     random_state: Optional[int]

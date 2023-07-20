@@ -52,8 +52,10 @@ def get_clustering_model() -> Union[KMeans, SpectralClustering]:
     raise Exception('Invalid params.clustering_algorithm parameter')
 
 
-# In case of Log-likelihood (only used in clustering). If it is lower, better!
-more_is_better = params.model != 'clustering' or params.clustering_scoring_method == 'concordance_index'
+# Even in case of Log-likelihood (only used in clustering) it has to be maximized:
+# https://github.com/CamDavidsonPilon/lifelines/issues/1545
+# For the moment there is no model that needs to be minimized
+more_is_better = True
 
 
 def compute_cross_validation_spark_f(subset: pd.DataFrame, y: np.ndarray, q: Queue):

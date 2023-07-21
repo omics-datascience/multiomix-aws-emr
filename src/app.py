@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 from flask import Flask, url_for, request, make_response, abort
 
 # BioAPI version
-VERSION = '0.1.15'
+VERSION = '0.1.16'
 
 # Logging config
 dictConfig({
@@ -28,15 +28,15 @@ dictConfig({
     }
 })
 
-# Temporal patch to prevent issues with the EMR API sending old states to Multiomix
-SLEEP_TIME: int = int(os.environ.get('SLEEP_TIME', 3))
+# Delay (in seconds) to prevent issues with the EMR API sending old states to Multiomix
+SLEEP_TIME: int = int(os.environ.get('SLEEP_TIME', 10))
 
 app = Flask(__name__)
 
 
 @app.get("/")
 def index():
-    return f"<h1>Multiomix AWS EMR integration v{VERSION}</h1>"
+    return f"<h1>Multiomix AWS-EMR integration v{VERSION}</h1>"
 
 
 @app.post("/job")

@@ -226,7 +226,8 @@ def compute_cross_validation_spark(
     return process_result
 
 
-def main():
+def __get_model_description_and_svm_kernel() -> Tuple[str, Optional[str]]:
+    """Gets the model description used to save in JSON and the SVM Kernel to use, both considering the parameters."""
     if params.model == 'svm':
         task = 'regression' if params.svm_is_regression else 'ranking'
         parameters_description = f'{task}_{params.svm_max_iterations}_max_iterations_{params.svm_optimizer}' \
@@ -238,8 +239,18 @@ def main():
         if params.model == 'rf':
             parameters_description = f'{params.rf_n_estimators}_trees'
         else:
-            parameters_description = f'{params.number_of_clusters}_clusters_{params.clustering_algorithm}_algorithm' \
-                                     f'_{params.clustering_scoring_method}_scoring_method'
+            # IMPORTANT: replaces the underscore with a dash to avoid issues with the Multiomix service that uses
+            # that character to split the parameters
+            clustering_algorithm = params.clustering_algorithm.replace('_', '-')
+            clustering_scoring_method = params.clustering_scoring_method.replace('_', '-')
+            parameters_description = f'{params.number_of_clusters}_clusters_{clustering_algorithm}_algorithm' \
+                                     f'_{clustering_scoring_method}_scoring_method'
+
+    return parameters_description, svm_kernel
+
+
+def main():
+    parameters_description, svm_kernel = __get_model_description_and_svm_kernel()
 
     # Spark settings
     sc = SparkContext()

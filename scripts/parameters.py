@@ -105,7 +105,7 @@ class Parameters:
 
         # SVM parameters
         parser.add_argument("--svm-kernel", dest='svm_kernel',
-                            choices=["linear", "poly", "rbf", "sigmoid", "cosine", "precomputed"],
+                            choices=["linear", "poly", "rbf", "sigmoid", "cosine"],
                             help="Kernel of the SVM", type=str, default="linear")
         parser.add_argument("--svm-optimizer", dest='svm_optimizer', choices=["avltree", "rbtree"],
                             help="Optimizer of the SVM", type=str, default="avltree")
@@ -122,13 +122,15 @@ class Parameters:
         # Clustering parameters
         parser.add_argument("--clustering-algorithm", dest='clustering_algorithm', choices=['k_means', 'spectral'],
                             help="Clustering algorithm to use", type=str, default="k_means")
+
+        # TODO: add LogRank test as an scoring method
         parser.add_argument("--clustering-scoring-method", dest='clustering_scoring_method',
                             choices=['concordance_index', 'log_likelihood'],
                             help="Clustering scoring method", type=str, default="log_likelihood")
         parser.add_argument("--number-of-clusters", dest='number_of_clusters',
                             help="Number of clusters to group by molecule expressions during clustering algorithm",
                             type=int, default=2)
-        # TODO: implement 'metric' and 'penalizer' parameters for C-Index or Log likelihood
+        # TODO: implement 'penalizer' parameters for C-Index or Log likelihood
 
         # CV parameters
         parser.add_argument("--n-jobs", dest='n_jobs',
